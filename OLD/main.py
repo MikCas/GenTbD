@@ -11,15 +11,13 @@ if __name__ == '__main__':
     videoFile = 'TownCent.mp4'
     videoPath = os.path.join(os.getcwd(), 'data', videoFile)
 
-    # DETECTOR 
     modelName = 'yolo11n'
     detector = Detector(modelName)
 
-    # TRACKER 
     tracker = Tracker()
 
-    # PROCESS VIDEO AND START TRACKING
     videoProcessor = VideoProcessor(detector, tracker,  videoPath=videoPath)
+    print(videoProcessor._frameCount)
     videoProcessor.process()
 
     # streamProcessor = VideoProcessor(isStream=True)

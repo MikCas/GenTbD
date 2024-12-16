@@ -1,41 +1,34 @@
 import cv2
-import random
 
-# IMPORT IDENTITY-PRESERVING PROPERTIES
 from properties.BoundingBox import BoundingBox
-# TODO: ADD APPEARANCE
-# TODO: ADD KEYPOINTS
+import random
 
 class Detection:
 
-    # TODO: UPDATE CONSTRUCTOR WITH MORE PROPERTIES
-    #def __init__(self, classId=0, boundingBox=BoundingBox(), keypoints=KeyPoints(), appearance=Appearance(), confidenceScore=0):
     def __init__(self, classId=0, boundingBox=BoundingBox(), confidenceScore=0):
-
-        #NIPP
-        self._confidenceScore = confidenceScore
         self._classId = classId
-
-        #IPP
         self._boundingBox = boundingBox
-    
-    def getConfidenceScore(self):
-        return self._confidenceScore
-    
+        self._confidenceScore = confidenceScore
+
     def getClassId(self):
         return self._classId
     
     def getBoundingBox(self):
         return self._boundingBox
     
-    # TODO: UPDATE THIS METHOD BY ADDING MORE PROPERTIES
-    def calculateSimilarity(self, otherBoundingBox):
-        similarityIou = self._boundingBox.iou(otherBoundingBox)
-        return similarityIou
+    def getConfidenceScore(self):
+        return self._confidenceScore
     
-    # Generate a color based on ID
+    # UPDATE THIS METHOD BY ADDING OTHER FEATURES TO THE COST SUCH AS KEYPOINTS AND APPEARANCE
+    def calculateCost(self, otherBoundingBox):
+        iou = self._boundingBox.iou(otherBoundingBox)
+        return 1 - iou
+    
     def generateColorFromId(self, id):
-        random.seed(id)  
+        """
+        Generate a unique color based on the id.
+        """
+        random.seed(id)  # Use the ID as the seed for reproducibility
         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         return color
     

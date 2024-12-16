@@ -1,69 +1,62 @@
 from collections import deque
 import numpy as np
 from scipy.optimize import linear_sum_assignment
+from pprint import pprint
 
 from Track import Track, TrackState
 
-from pprint import pprint
-
 class Tracker:
-    def __init__(self, maxTracks=100, detectionThreshold=0.3, newTrackThreshold=0.3):
-        self._frameCount = 0                             # Current frame count
-        self._maxTracks = maxTracks                      # Maximum number of tracks that can be maintained
-        self._detectionThreshold = detectionThreshold    # Threshold for detection confidence
-        self._newTrackThreshold = newTrackThreshold      # Threshold for creating a new track
 
-        self._activatedTracks = []                       # New tracks to be added to the matchable tracks list (if match), or back to nonmatchable tracks list (if no match)
-        self._matchableTracks = []                       # Tracks that can be matched with detections in the current frame (MATCHED AND LOST)
-        self._removedTracks = deque()                    # Tracks that cannot be matched with any detection (REMOVED)
+    def __init__(self, maxTracks=100, detectionThreshold=0.3, newTrackThreshold=0.3, matchThreshold=0.1):
+
+        # TRACKER PARAMETERS
+        self._frameCount = 0                             # Current frame count
+
+        # TODO: CREATE AN ADAPTIVE TRACKER SUCH THAT THE NUMBER OF TRACKS INCREASES DEPENDING ON THE NUMBER OF AVAILABLE TRACKS - GENERATE NEW TRACKS IF NO REMOVED TRACKS ARE AVAILABLE
+        # IN THIS CASE - REMVOED TRACKS IS INITIALLY EMPTY, EVERYTHING IS INITIALLY EMPTY AND TRACKS ARE ADDED AS MORE NEW DETECTIONS ARE FOUND
+        self._maxTracks = maxTracks                      # Maximum number of tracks that can be maintained
+
+        # THRESHOLDS 
+        self._detectionThreshold = detectionThreshold    # Cascaded LA threshold for detection
+        self._newTrackThreshold = newTrackThreshold      # Activation condition for new tracks
+
+        # TRACKS - List for each track state
+        self._newTracks = []                             
+        self._matchedTracks = []                         
+        self._lostTracks = []                           
+        self._removedTracks = deque()                        
 
         self.initialise()
-
-    def initialise(self):
-        self._frameCount = 0
-        self._activatedTracks.clear()
-        self._matchableTracks.clear()
-        self._removedTracks.clear()
-
-        for i in range(self._maxTracks):
-            self._removedTracks.append(Track(i+1))
-
-    def getActivatedTracks(self):
-        return self._activatedTracks
     
-    def getMatchableTracks(self):
-        return self._matchableTracks
+    #GETTERS
+    def getNewTracks(self):
+        return self._newTracks
+    
+    def getMatchedTracks(self):
+        return self._matchedTracks
 
+    def getLostTracks(self):
+        return self._lostTracks
+    
     def getRemovedTracks(self):
         return self._removedTracks
     
     def getNumRemovedTracks(self):
         return len(self._removedTracks)
-
-    # FIX MAXIMUM NUMBER OF TRACKS BRANCH - MAYBE ERROR OR DYNAMIC INCREASE IN TRACKS
-    # ADD ACTIVATION CONDITION TO THE ACTIVATETRACK FUNCTION HERE
-    def activateTrack(self, detection, tracks):
-        if self.getNumRemovedTracks() == 0 :
-            print("Cannot create new track. Maximum number of tracks reached.")
     
-        activatedTrack = self._removedTracks.popleft()
-        activatedTrack.activate(self._frameCount, detection)
-        tracks.append(activatedTrack)
+    def initialise(self):
+        self._frameCount = 0
 
-    def partitionDetections(self, detections):
-        highDetections = []
-        lowDetections = []
+        self._newTracks.clear()
+        self._matchedTracks.clear()
+        self._lostTracks.clear()
+        self._removedTracks.clear()
 
-        for detection in detections:
-            if detection.getConfidenceScore() >= self._detectionThreshold:
-                highDetections.append(detection)
-            else:
-                lowDetections.append(detection)
+        for i in range(self._maxTracks):
+            self._removedTracks.append(Track(i + 1))
 
-        return highDetections, lowDetections
-
-
-    # LINEAR ASSINGMENT - MATCHING TRACKS AND DETECTIONS
+    # LINEAR ASSIGNMENT
+    # Generate cost matrix for tracks(rows) and detections(columns)
     def calculateCostMatrix(self, tracks, detections):
         numTracks = len(tracks)
         numDetections = len(detections)
@@ -73,11 +66,11 @@ class Tracker:
 
         for i, track in enumerate(tracks):
             for j, detection in enumerate(detections):
-                trackBoundingBoxPrediction = track.getPredictedState()
-                costMatrix[i, j] = detection.calculateCost(trackBoundingBoxPrediction)
+                costMatrix[i, j] = track.calculateCost(detection)
         
         return costMatrix
     
+    # Check if the cost is less than the match threshold
     def matchThresholdPassed(self, cost, matchThreshold):
         return cost <= matchThreshold
     
@@ -135,12 +128,30 @@ class Tracker:
 
         return matchedTracksDetections, unmatchedTracks, unmatchedDetections
 
-    # TRACK PROCESSING
+    # TRACK MANAGEMENT
     def moveItem(self, index, fromArray, toArray):
         item = fromArray[index]
         fromArray[index] = None  # Set the value in the original array to None
         toArray.append(item)     # Add to the new array
 
+    # ACTIVATE TRACK (REMOVED -> NEW)
+    # TODO: ACTIVATETRACKCONDITION AND ACTIVATETRACK FUNCTIONS CAN BE MERGED
+    # TODO: THIS CAN BE UPDATED DEPENDING ON WHAT NIPP TO USE
+    def activateTrackCondition(self, detection):
+        return detection.getConfidenceScore() >= self._newTrackThreshold
+    
+    # DEACTIVATE TRACK (LOST -> REMOVED)
+    # TODO: THIS CAN BE UPDATED DEPENDING ON WHAT NIPP TO USE
+    def deactivateTrackCondition(self, track):
+        # return track.getConsecutiveInvisibleCount() >= 10
+        return True
+    
+    # TODO: ADD A CHECK HERE TO MAKE SURE THERE ARE STILL TRACKS LEFT IN THE REMOVEDTRACKS
+    def activateTrack(self, detection, tracks):
+        activatedTrack = self._removedTracks.popleft()
+        activatedTrack.activate(self._frameCount, detection)
+        tracks.append(activatedTrack)
+    
     def processMatchedTracks(self, matches, tracks, detections, matchableTracks):
         for trackIndex, detectionIndex in matches:
             track = tracks[trackIndex]
@@ -163,6 +174,20 @@ class Tracker:
             if detection.getConfidenceScore() >= self._newTrackThreshold:
                 self.activateTrack(detection, activatedTracks)
 
+
+    # CASCADED LINEAR ASSIGNMENT
+    def partitionDetections(self, detections):
+        highDetections = []
+        lowDetections = []
+
+        for detection in detections:
+            if detection.getConfidenceScore() >= self._detectionThreshold:
+                highDetections.append(detection)
+            else:
+                lowDetections.append(detection)
+
+        return highDetections, lowDetections
+
     def update(self, frameCount, detections):
         self._frameCount = frameCount
 
@@ -174,8 +199,8 @@ class Tracker:
     def processInitialFrame(self, detections):
         print("Processing initial frame")
         for detection in detections:
-            if detection.getConfidenceScore() >= self._newTrackThreshold:
-                self.activateTrack(detection, self._activatedTracks)
+            if self.activateTrackCondition(detection):
+                self.activateTrack(detection, self._newTracks)
 
     def processSubsequentFrame(self, detections):
         print("Processing subsequent frame")
@@ -185,61 +210,61 @@ class Tracker:
         # Partition detections into high and low confidence detections
         detections1, detections2 = self.partitionDetections(detections)
 
-        if(self._frameCount == 2):
-            matchedIndexes, unmatchedTracksIndexes, unmatchedDetectionsIndexes = self.linearAssignment(self._activatedTracks, detections1)
+        # if(self._frameCount == 2):
+            # matchedIndexes, unmatchedTracksIndexes, unmatchedDetectionsIndexes = self.linearAssignment(self._activatedTracks, detections1)
 
-            self.processMatchedTracks(matchedIndexes, self._activatedTracks, detections1, bufferMatchableTracks)
-            self.processUnmatchedTracks(unmatchedTracksIndexes, self._activatedTracks, bufferMatchableTracks, self._removedTracks)
-            self.processNewTracks(unmatchedDetectionsIndexes, detections1, bufferActivatedTracks)
+            # self.processMatchedTracks(matchedIndexes, self._activatedTracks, detections1, bufferMatchableTracks)
+            # self.processUnmatchedTracks(unmatchedTracksIndexes, self._activatedTracks, bufferMatchableTracks, self._removedTracks)
+            # self.processNewTracks(unmatchedDetectionsIndexes, detections1, bufferActivatedTracks)
 
-            self._activatedTracks = bufferActivatedTracks
-            self._matchableTracks = bufferMatchableTracks
+            # self._activatedTracks = bufferActivatedTracks
+            # self._matchableTracks = bufferMatchableTracks
 
-        else:
-            # Stage 1: Match detections1 (High Scoring Detection) with matchable tracks (MATCHED/LOST Tracks)
-            matched1Indexes, unmatchedTracks1Indexes, unmatchedDetections1Indexes = self.linearAssignment(self._matchableTracks, detections1)
+        # else:
+            # # Stage 1: Match detections1 (High Scoring Detection) with matchable tracks (MATCHED/LOST Tracks)
+            # matched1Indexes, unmatchedTracks1Indexes, unmatchedDetections1Indexes = self.linearAssignment(self._matchableTracks, detections1)
 
-            # ALSO FILTER THE NSTATE OF THE TRACK TO ONLY HAVE MATCHED TRACKS - SO LOST TRACKS ARE LOST AFTER FIRST ASSIGNMENT
-            unmatchedTracks1 = []
-            for trackIndex in unmatchedTracks1Indexes:  
-                self.moveItem(trackIndex, self._matchableTracks, unmatchedTracks1)
+            # # ALSO FILTER THE NSTATE OF THE TRACK TO ONLY HAVE MATCHED TRACKS - SO LOST TRACKS ARE LOST AFTER FIRST ASSIGNMENT
+            # unmatchedTracks1 = []
+            # for trackIndex in unmatchedTracks1Indexes:  
+            #     self.moveItem(trackIndex, self._matchableTracks, unmatchedTracks1)
                 
-            unmatchedDetections1 = []
-            for detectionIndex in unmatchedDetections1Indexes:
-                self.moveItem(detectionIndex, detections1, unmatchedDetections1)
+            # unmatchedDetections1 = []
+            # for detectionIndex in unmatchedDetections1Indexes:
+            #     self.moveItem(detectionIndex, detections1, unmatchedDetections1)
 
-            print("UNMATCHED DETECTIONS 1")
-            pprint(unmatchedDetections1)
+            # print("UNMATCHED DETECTIONS 1")
+            # pprint(unmatchedDetections1)
 
-            # Stage 2: Match unmatchedTracks1 with detections2 (Low Scoring Detection)
-            matched2Indexes, unmatchedTracks2Indexes, unmatchedDetections2Indexes = self.linearAssignment(unmatchedTracks1, detections2)
+            # # Stage 2: Match unmatchedTracks1 with detections2 (Low Scoring Detection)
+            # matched2Indexes, unmatchedTracks2Indexes, unmatchedDetections2Indexes = self.linearAssignment(unmatchedTracks1, detections2)
 
-            # Stage 3: Match activated tracks (NEW Tracks) with remaining unmatched detections from Stage 1 (Unmatched high scoring detections)
-            matched3Indexes, unmatchedTracks3Indexes, unmatchedDetections3Indexes = self.linearAssignment(self._activatedTracks, unmatchedDetections1)
+            # # Stage 3: Match activated tracks (NEW Tracks) with remaining unmatched detections from Stage 1 (Unmatched high scoring detections)
+            # matched3Indexes, unmatchedTracks3Indexes, unmatchedDetections3Indexes = self.linearAssignment(self._activatedTracks, unmatchedDetections1)
 
-            # Track Management
-            # Process matched tracks
-            self.processMatchedTracks(matched1Indexes, self._matchableTracks, detections1, bufferMatchableTracks)
-            self.processMatchedTracks(matched2Indexes, unmatchedTracks1, detections2, bufferMatchableTracks)
-            self.processMatchedTracks(matched3Indexes, self._activatedTracks, unmatchedDetections1, bufferMatchableTracks)
+            # # Track Management
+            # # Process matched tracks
+            # self.processMatchedTracks(matched1Indexes, self._matchableTracks, detections1, bufferMatchableTracks)
+            # self.processMatchedTracks(matched2Indexes, unmatchedTracks1, detections2, bufferMatchableTracks)
+            # self.processMatchedTracks(matched3Indexes, self._activatedTracks, unmatchedDetections1, bufferMatchableTracks)
 
-            # Process unmatched tracks
-            self.processUnmatchedTracks(unmatchedTracks2Indexes, unmatchedTracks1, bufferMatchableTracks, self._removedTracks)
-            self.processUnmatchedTracks(unmatchedTracks3Indexes, self._activatedTracks, bufferMatchableTracks, self._removedTracks)
+            # # Process unmatched tracks
+            # self.processUnmatchedTracks(unmatchedTracks2Indexes, unmatchedTracks1, bufferMatchableTracks, self._removedTracks)
+            # self.processUnmatchedTracks(unmatchedTracks3Indexes, self._activatedTracks, bufferMatchableTracks, self._removedTracks)
 
-            # Process new tracks
-            # If the unmatched detections from the high scoring detections are not empty, create new tracks
-            # NEED TO SEE IF IT MAKES SENSE TO POPULATE THE RESULTS FROM LINEAR ASSIGNMENT WITH THE INDECES OF EVERYTHING IF THE INPUT IS EMPTY
-            if(len(unmatchedDetections3Indexes) == 0 and len(unmatchedDetections1) > 0):
-                unmatchedDetections3Indexes = list(range(len(unmatchedDetections1)))
-            self.processNewTracks(unmatchedDetections3Indexes, unmatchedDetections1, bufferActivatedTracks)
+            # # Process new tracks
+            # # If the unmatched detections from the high scoring detections are not empty, create new tracks
+            # # NEED TO SEE IF IT MAKES SENSE TO POPULATE THE RESULTS FROM LINEAR ASSIGNMENT WITH THE INDECES OF EVERYTHING IF THE INPUT IS EMPTY
+            # if(len(unmatchedDetections3Indexes) == 0 and len(unmatchedDetections1) > 0):
+            #     unmatchedDetections3Indexes = list(range(len(unmatchedDetections1)))
+            # self.processNewTracks(unmatchedDetections3Indexes, unmatchedDetections1, bufferActivatedTracks)
 
-            self._activatedTracks = bufferActivatedTracks
-            self._matchableTracks = bufferMatchableTracks
+            # self._activatedTracks = bufferActivatedTracks
+            # self._matchableTracks = bufferMatchableTracks
 
-            pprint(self._matchableTracks)
-            pprint(self._activatedTracks)
-    
+            # pprint(self._matchableTracks)
+            # pprint(self._activatedTracks)
+
     def display(self, frame):
         for track in self._matchableTracks:
             if track.getTrackState() == TrackState.MATCHED:
@@ -248,11 +273,6 @@ class Tracker:
         for track in self._activatedTracks:
             track.display(frame)
 
+
     
-    
-
-
-
-
-
-
+   

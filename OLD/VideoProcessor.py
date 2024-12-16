@@ -46,11 +46,11 @@ class VideoProcessor:
 
             # PROCESS FRAME HERE
             detections = self._detector.inference(frame)
-            for detection in detections:
-                detection.display(frame)
+            # for detection in detections:
+            #     detection.display(frame)
             
-            # self._tracker.update(self._currentFrame, detections)
-            # self._tracker.display(frame)
+            self._tracker.update(self._currentFrame, detections)
+            self._tracker.display(frame)
 
             cv2.imshow('Frame', frame)
 
