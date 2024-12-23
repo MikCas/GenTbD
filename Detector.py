@@ -23,6 +23,8 @@ class Detector:
     # Perform inference on frame and output detections
     def inference(self, frame): 
 
+        print("---DETECTING")
+
         results = self._model.predict(frame, imgsz=self._imgsz, classes=[Detector._HUMANCLASS], conf=self._confidenceThreshold)
 
         detections = []

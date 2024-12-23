@@ -66,7 +66,7 @@ class Track:
         elif self._trackState == TrackState.LOST:
             # LOST -> MATCHED
             self._trackState = TrackState.MATCHED
-            self.resetLostCounter()
+            self.resetLostCount()
             self.updateKalmanFilter(detection)
             self.updateTrajectory(frameCount, detection)
 
@@ -84,7 +84,7 @@ class Track:
 
         elif self._trackState == TrackState.LOST:
             # LOST -> LOST (LOST COUNTER < MAX)
-            if self._lostCounter < Track._MaxLostCount:
+            if self._lostCounter < Track._MAXLOSTCOUNT:
                 self.incrementLostCount()
             # LOST -> REMOVED (LOST COUNTER > MAX)
             else:
@@ -94,6 +94,9 @@ class Track:
     # TRACK HISTORY
     def getTrajectory(self):
         return self._trajectory
+
+    def getMostRecentDetection(self):
+        return self._trajectory.getMostRecentDetection()
     
     def updateTrajectory(self, frameCount, detection):
         self._trajectory[frameCount] = detection
@@ -121,7 +124,7 @@ class Track:
     # TODO: Can also use other NIPP features to calculate cost
     def calculateCost(self, detection):
         predictedState = self.getPredictedState()
-        similarity = predictedState.calculateSimilarity(detection.getBoundingBox())
+        similarity = detection.calculateSimilarity(predictedState)
         cost = 1 - similarity
         return cost
     
@@ -129,6 +132,8 @@ class Track:
         self._trajectory.getMostRecentDetection().display(frame, self.getId())
 
     def __repr__(self):
-        # return f"Track(ID({self.getId()}), STATE({self.getTrackState()}), LOSTCOUNT({self.getLostCount()}), TRAJ_LEN({len(self.getTrajectory())})"
-        return f"({self.getId()}, {self.getTrackState()}, {self.getLostCount()}, {len(self.getTrajectory())})"
+        return f"Track(ID={self.getId()}, State={self.getTrackState()}, LostCount={self.getLostCount()}, TrajectoryLength={len(self.getTrajectory())})"
 
+    # Helper method to make it more readable when printing
+    def pretty_print(self):
+        return f"Track ID: {self._id}\nState: {self._trackState.name}\nLost Count: {self._lostCounter}\nTrajectory Length: {len(self._trajectory)}"

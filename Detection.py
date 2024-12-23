@@ -55,6 +55,9 @@ class Detection:
         cv2.putText(frame, label, (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, lineThickness)
     
     def __repr__(self):
-        # return f"Detection(classId={self._classId}, boundingBox={self._boundingBox}, confidenceScore={self._confidenceScore})"
-        return f"[{self._classId}, {self._boundingBox}, {self._confidenceScore}]"
-    
+        # Using the BoundingBox __repr__ directly for bbox representation
+        return f"Detection(ClassID={self._classId}, BoundingBox={repr(self._boundingBox)}, ConfidenceScore={self._confidenceScore:.2f})"
+
+    def pretty_print(self):
+        # More readable format for easier inspection
+        return f"Class ID: {self._classId}\n{self._boundingBox}\nConfidence Score: {self._confidenceScore:.2f}"

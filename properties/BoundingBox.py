@@ -63,5 +63,5 @@ class BoundingBox:
         return intersectionArea / unionArea
     
     def __repr__(self):
-        # return f"BoundingBox(xMin={self.xMin}, yMin={self.yMin}, xMax={self.xMax}, yMax={self.yMax})"
-        return f"{self.xywh()}"
+        return f"BoundingBox(xMin={self.xMin}, yMin={self.yMin}, xMax={self.xMax}, yMax={self.yMax})"
+        # return f"{self.xywh()}"

@@ -37,7 +37,7 @@ class VideoProcessor:
 
     def processVideo(self):
         while self._currentFrame < self._frameCount:
-            print("---FRAME " + str(self._currentFrame))
+            print("---PROCESSING FRAME " + str(self._currentFrame))
             result, frame = self._cap.read()
 
             if not result:
@@ -46,11 +46,11 @@ class VideoProcessor:
 
             # PROCESS FRAME HERE
             detections = self._detector.inference(frame)
-            for detection in detections:
-                detection.display(frame)
+            # for detection in detections:
+            #     detection.display(frame)
             
-            # self._tracker.update(self._currentFrame, detections)
-            # self._tracker.display(frame)
+            self._tracker.update(self._currentFrame, detections)
+            self._tracker.displayTracks(frame)
 
             cv2.imshow('Frame', frame)
 
@@ -58,7 +58,7 @@ class VideoProcessor:
             key = cv2.waitKey(0) & 0xFF
             if key == ord('c'):
                 self.incrementFrame()
-                print("")
+                print("----------------------------------------------------------------------")
                 continue
             if key == ord('q'):
                 break

@@ -1,0 +1,16 @@
+__pycache__/
+data/
+gentbd/
+OLD/
+
+*.log
+*.tmp
+*.swp
+*.bak
+.DS_Store
+.env
+.vscode/
+.idea/
+*.pyc
+*.pyo
+*.pyd
