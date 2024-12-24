@@ -18,6 +18,8 @@ class Detector:
         self._model_path = f"data/{model_name}.pt"
         self._model = YOLO(self._model_path)
         self._imgsz = (0, 0)
+
+        self._logger.info(f"----DETECTOR INITIALISED - MODEL {self._model_path}")
         
     def set_img_size(self, imgsz):
         self._imgsz = imgsz

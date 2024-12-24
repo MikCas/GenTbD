@@ -107,7 +107,6 @@ class Track:
         return self._trajectory.get_most_recent_detection()
     
     def update_trajectory(self, frame_count, detection):
-        print(f"Updating trajectory for track {self.id} at frame {frame_count}")
         self._trajectory[frame_count] = detection
 
     def initialise_kalman_filter(self, detection):
