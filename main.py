@@ -1,25 +1,43 @@
+import logging
 import os
-from ultralytics import YOLO
-from pprint import pprint
 
-from VideoProcessor import VideoProcessor
 from Detector import Detector
 from Tracker import Tracker
+from VideoProcessor import VideoProcessor
 
-if __name__ == '__main__':
+def setup_logger():
+    # Set up logging
+    logger = logging.getLogger('System_Logger')
+    logger.setLevel(logging.DEBUG) 
 
-    videoFile = 'TownCent.mp4'
-    videoPath = os.path.join(os.getcwd(), 'data', videoFile)
+    # Define the format of log messages
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+    # StreamHandler sends log messages to the console
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    return logger
+
+if __name__ == '__main__':  
+
+    # LOGGER
+    logger = setup_logger()
+
+    # VIDEO FILE PATH
+    video_file = 'TownCent.mp4'
+    video_path = os.path.join(os.getcwd(), 'data', video_file)
 
     # DETECTOR 
-    modelName = 'yolo11n'
-    detector = Detector(modelName)
+    model_name = 'yolo11n'
+    detector = Detector(model_name, logger)
 
     # TRACKER 
     tracker = Tracker()
 
     # PROCESS VIDEO AND START TRACKING
-    videoProcessor = VideoProcessor(detector, tracker,  videoPath=videoPath)
+    videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, logger=logger)
     videoProcessor.process()
 
     # streamProcessor = VideoProcessor(isStream=True)

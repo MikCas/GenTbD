@@ -1,46 +1,51 @@
+import logging
 from ultralytics import YOLO
-from pprint import pprint
 
 from properties.BoundingBox import BoundingBox
 from Detection import Detection
 
 class Detector:
 
-    _HUMANCLASS = 0
+    # CLASS CONSTANTS
+    _HUMAN_CLASS = 0
+    _CONFIDENCE_THRESHOLD = 0.1
     
-    def __init__(self, modelName, confidenceThreshold=0.1,):
-        self._modelPath = 'data/' + modelName + '.pt'
-        self._model = YOLO(self._modelPath)
-        self._imgsz = (0, 0)
+    def __init__(self, model_name, logger=None):
 
-        # PARAMETERS
-        self._confidenceThreshold = confidenceThreshold
+        # INITIALISE LOGGER, OTHERWISE USE DEFAULT LOGGER
+        self._logger = logger if logger else logging.getLogger(__name__)
+
+        self._model_path = f"data/{model_name}.pt"
+        self._model = YOLO(self._model_path)
+        self._imgsz = (0, 0)
         
-    def setImgSize(self, imgsz):
+    def set_img_size(self, imgsz):
         self._imgsz = imgsz
         return
     
-    # Perform inference on frame and output detections
+    # PERFORM DETECTION ON FRAME
     def inference(self, frame): 
+        self._logger.info("----DETECTING")
 
-        print("---DETECTING")
-
-        results = self._model.predict(frame, imgsz=self._imgsz, classes=[Detector._HUMANCLASS], conf=self._confidenceThreshold)
-
+        try:
+            results = self._model.predict(frame, imgsz=self._imgsz, classes=[Detector._HUMAN_CLASS], conf=Detector._CONFIDENCE_THRESHOLD)
+        except Exception as e:
+            self._logger.error(f"----ERROR DURING INFERENCE: {e}")
+            return []
+        
         detections = []
-
-        # Loop through the results and extract bounding box info
         for result in results:
-
             boxes = result.boxes
-            cls = boxes.cls.cpu().numpy()    # Class labels
-            xyxy = boxes.xyxy.cpu().numpy()  # Bounding box coordinates
-            conf = boxes.conf.cpu().numpy()  # Confidence scores
+            cls, xyxy, conf = boxes.cls.cpu().numpy(), boxes.xyxy.cpu().numpy(), boxes.conf.cpu().numpy()
+            detections.extend(self.process_detections(cls, xyxy, conf))
 
-            # Combine xyxy, confidence, and class into one array per detection
-            for i in range(len(xyxy)):
-                bbox = BoundingBox.fromCorners(xyxy[i][0], xyxy[i][1], xyxy[i][2], xyxy[i][3])
-                detection = Detection(cls[i], bbox, conf[i])
-                detections.append(detection)
-
+        return detections
+    
+    # CREATES DETECTION OBJECTS FROM INFERENCE RESULTS
+    def process_detections(self, cls, xyxy, conf):
+        detections = []
+        for i in range(len(xyxy)):
+            bbox = BoundingBox.from_corners(*xyxy[i])
+            detection = Detection(cls[i], bbox, conf[i])
+            detections.append(detection)
         return detections

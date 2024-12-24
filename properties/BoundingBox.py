@@ -1,67 +1,84 @@
 class BoundingBox:
-        
-    def __init__(self, xMin=0, yMin=0, xMax=0, yMax=0):
-        self.xMin = xMin
-        self.yMin = yMin
-        self.xMax = xMax
-        self.yMax = yMax
+    # THIS BOUNDING BOX IMPLEMENTATION ASSUMES X INCREASES FROM LEFT TO RIGHT, AND Y INCREASES FROM TOP TO BOTTOM (SO (0, 0) IS AT TOP-LEFT CORNER)
 
+    # ATTRIBUTES
+    __slots__ = ['_x_min', '_y_min', '_x_max', '_y_max']
+
+    def __init__(self, x_min=0.0, y_min=0.0, x_max=0.0, y_max=0.0):
+        self._x_min = float(x_min)
+        self._y_min = float(y_min)
+        self._x_max = float(x_max)
+        self._y_max = float(y_max)
+
+    # BOUNDING BOX FROM CORNERS - MAIN REPRESENTATION 
     @classmethod
-    def fromCorners(cls, xMin, yMin, xMax, yMax):
-        """Create a BoundingBox using corner coordinates."""
-        return cls(xMin, yMin, xMax, yMax)
+    def from_corners(cls, x_min, y_min, x_max, y_max):
+        return cls(float(x_min), float(y_min), float(x_max), float(y_max))
 
+
+    # BOUNDING BOX FROM CENTER
     @classmethod
-    def fromCenter(cls, centerX, centerY, width, height):
-        """Create a BoundingBox using center coordinates and dimensions."""
-        xMin = centerX - width / 2
-        yMin = centerY - height / 2
-        xMax = centerX + width / 2
-        yMax = centerY + height / 2
-        return cls(xMin, yMin, xMax, yMax)
+    def from_center(cls, center_x, center_y, width, height):
+        if width < 0 or height < 0:
+            raise ValueError("Width and height must be non-negative")
+        x_min = float(center_x - width / 2)
+        y_min = float(center_y - height / 2)
+        x_max = float(center_x + width / 2)
+        y_max = float(center_y + height / 2)
+        return cls(x_min, y_min, x_max, y_max)
 
+    @property
     def width(self):
-        return abs(self.xMax - self.xMin)
+        return abs(self._x_max - self._x_min)
 
+    @property
     def height(self):
-        return abs(self.yMax - self.yMin)
+        return abs(self._y_max - self._y_min)
 
+    @property
     def area(self):
-        return self.width() * self.height()
-    
+        return self.width * self.height
+
+    @property
     def center(self):
-        return [(self.xMin + self.xMax) / 2, (self.yMin + self.yMax) / 2]
+        return (self._x_min + self._x_max) / 2, (self._y_min + self._y_max) / 2
     
     def xyxy(self):
-        return [self.xMin, self.yMin, self.xMax, self.yMax]
+        return self._x_min, self._y_min, self._x_max, self._y_max
     
     def xywh(self):
-        return [self.xMin, self.yMin, self.width(), self.height()]
+        return self._x_min, self._y_min, self.width, self.height
     
     def cxcywh(self):
-        cx, cy = self.center()
-        return [cx, cy, self.width(), self.height()]
+        center_x, center_y = self.center
+        return center_x, center_y, self.width, self.height
 
+    # CALCULATE INTERSECTION BETWEEN TWO BOUNDING BOXES
     def intersect(self, other):
-        xMin = max(self.xMin, other.xMin)
-        yMin = max(self.yMin, other.yMin)
-        xMax = min(self.xMax, other.xMax)
-        yMax = min(self.yMax, other.yMax)
+        x_min, y_min = max(self._x_min, other._x_min), max(self._y_min, other._y_min)
+        x_max, y_max = min(self._x_max, other._x_max), min(self._y_max, other._y_max)
 
-        if xMin < xMax and yMin < yMax:
-            return BoundingBox(xMin, yMin, xMax, yMax)
+        # If the intersection is valid, return the bounding box
+        if x_min < x_max and y_min < y_max:
+            return BoundingBox(x_min, y_min, x_max, y_max)
         else:
             return None
 
+    # CALCULATE THE IOU - SIMILARITY METRIC
     def iou(self, other):
         intersection = self.intersect(other)
         if intersection is None:
             return 0.0
 
-        intersectionArea = intersection.area()
-        unionArea = self.area() + other.area() - intersectionArea
-        return intersectionArea / unionArea
-    
-    def __repr__(self):
-        return f"BoundingBox(xMin={self.xMin}, yMin={self.yMin}, xMax={self.xMax}, yMax={self.yMax})"
-        # return f"{self.xywh()}"
+        intersection_area = intersection.area
+        union_area = self.area + other.area - intersection_area
+        return intersection_area / union_area
+
+    def __repr__(self, format='corner'):
+        if format == 'corner':
+            return f"BoundingBox(_x_min={self._x_min}, _y_min={self._y_min}, _x_max={self._x_max}, _y_max={self._y_max})"
+        elif format == 'center':
+            return (f"BoundingBox(width={self.width}, height={self.height}, "
+                    f"area={self.area}, center={self.center})")
+        else:
+            return f"BoundingBox(_x_min={self._x_min}, _y_min={self._y_min}, _x_max={self._x_max}, _y_max={self._y_max})"

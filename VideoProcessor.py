@@ -1,94 +1,112 @@
-import cv2
 import logging
+import cv2
 import sys
 
 class VideoProcessor:
-    def __init__(self, detector, tracker, videoPath=None, isStream=False):
+    def __init__(self, detector, tracker, video_path=None, is_stream=False, logger=None):
         
-        self._currentFrame = 1                                         # Current frame number
-        self._isStream = isStream                                      # Flag to determine if video is a stream or not
-
+        # INITIALISE LOGGER, OTHERWISE USE DEFAULT LOGGER
+        self.logger = logger if logger else logging.getLogger(__name__)
+        
+        # SYSTEM PROPERTIES
+        self._current_frame = 1                                         # Current frame number
+        self._is_stream = is_stream                                      # Flag to determine if video is a stream or not
         self._detector = detector
         self._tracker = tracker
 
-        # Video Properties  
-        if self._isStream:
-            self._cap = cv2.VideoCapture(0)                            # Camera capture object
-        else:
-            self._cap = cv2.VideoCapture(videoPath)                    # Video capture object
-        if not self._cap.isOpened():
-            sys.exit(1)
+        # VIDEO CAPTURE OBJECTS - VIDEO OR STREAM 
+        self._cap = self.initialise_video_source(video_path)
 
+        # VIDEO PROPERTIES
         self._fps = self._cap.get(cv2.CAP_PROP_FPS)                     # Frames per second  
         self._width = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))      # Frame width 
         self._height = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    # Frame height  
-        self._frameCount = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT)) # Total number of frames in the video
+        self._frame_count = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT)) # Total number of frames in the video
 
-        detector.setImgSize((self._height, self._width))
+        # SET IMAGE SIZE FOR DETECTOR
+        detector.set_img_size((self._height, self._width))
 
+    def initialise_video_source(self, video_path):
+        if self._is_stream:
+            cap = cv2.VideoCapture(0)
+        else:
+            cap = cv2.VideoCapture(video_path)
+        
+        if not cap.isOpened():
+            self._logger.error(f"----ERROR COULD NOT OPEN VIDEO CAPTURE: {video_path}")
+            raise ValueError("Video source could not be opened.")
+        return cap
+    
+    # CLEAN UP RESOURCES
     def __del__(self):
         self._cap.release()
     
-    def incrementFrame(self):
-        self._currentFrame += 1
+    def increment_frame(self):
+        self._current_frame += 1
     
-    def getCurrentFrame(self):
-        return self._currentFrame
+    def get_current_frame(self):
+        return self._current_frame
 
-    def processVideo(self):
-        while self._currentFrame < self._frameCount:
-            print("---PROCESSING FRAME " + str(self._currentFrame))
+    # PROCESS A SINGLE FRAME - PERFORM DETECTION AND TRACKING
+    def process_frame(self, frame):
+        detections = self._detector.inference(frame)
+        for detection in detections:
+            detection.display(frame)
+            # self.logger.info(f"Detection: {detection}")
+
+        # self._tracker.update(self._current_frame, detections)
+        # self._tracker.display_tracks(frame)
+
+        cv2.imshow('Frame', frame)
+        return
+
+    # PROCESS VIDEO - FRAME BY FRAME
+    def process_video(self):
+        while self._current_frame < self._frame_count:
+            self.logger.info(f"----PROCESSING FRAME: {self._current_frame}")
             result, frame = self._cap.read()
 
             if not result:
-                # ERROR READING FRAME
+                self.logger.error("----ERROR READING FRAME")
                 break
 
-            # PROCESS FRAME HERE
-            detections = self._detector.inference(frame)
-            # for detection in detections:
-            #     detection.display(frame)
-            
-            self._tracker.update(self._currentFrame, detections)
-            self._tracker.displayTracks(frame)
+            self.process_frame(frame)
 
-            cv2.imshow('Frame', frame)
-
-            # CONTINUE OR EXIT
+            # CONTINUE OR EXIT VIDEO 
             key = cv2.waitKey(0) & 0xFF
             if key == ord('c'):
-                self.incrementFrame()
-                print("----------------------------------------------------------------------")
-                continue
-            if key == ord('q'):
+                self.increment_frame()
+                self.logger.info("----CONTINUING TO NEXT FRAME")
+                self.logger.info("------------------------------------------------------------")
+            elif key == ord('q'):
+                self.logger.info("----EXITING VIDEO PROCESSING")
                 break
-        return
 
-    def processStream(self):
+    # PROCESS STREAM - FRAME BY FRAME
+    def process_stream(self):
         while True:
-            print("---FRAME " + str(self._currentFrame))
+            self.logger.info(f"----PROCESSING FRAME: {self._current_frame}")
             result, frame = self._cap.read()
 
             if not result:
-                # ERROR READING FRAME
+                self.logger.error("----ERROR READING FRAME")
                 break
 
-            # PROCESS FRAME HERE
-            detections = self._detector.inference(frame)
-            for detection in detections:
-                detection.display(frame)
-            cv2.imshow('Frame', frame)
+            self.process_frame(frame)
             
+            # EXIT STREAM
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                self.logger.info("----EXITING STREAM PROCESSING")
                 break
 
-            self.incrementFrame()
+            self.increment_frame()
         return
     
+    # PROCESS VIDEO OR STREAM
     def process(self):
-        if self._isStream:
-            self.processStream()
+        if self._is_stream:
+            self.process_stream()
         else:
-            self.processVideo()
+            self.process_video()
 
 
