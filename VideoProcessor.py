@@ -50,12 +50,12 @@ class VideoProcessor:
     # PROCESS A SINGLE FRAME - PERFORM DETECTION AND TRACKING
     def process_frame(self, frame):
         detections = self._detector.inference(frame)
-        for detection in detections:
-            detection.display(frame)
-            # self.logger.info(f"Detection: {detection}")
+        # for detection in detections:
+        #     detection.display(frame)
+        #     # self.logger.info(f"Detection: {detection}")
 
-        # self._tracker.update(self._current_frame, detections)
-        # self._tracker.display_tracks(frame)
+        self._tracker.update(self._current_frame, detections)
+        self._tracker.display_tracks(frame)
 
         cv2.imshow('Frame', frame)
         return

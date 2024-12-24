@@ -6,7 +6,7 @@ from Tracker import Tracker
 from VideoProcessor import VideoProcessor
 
 def setup_logger():
-    # Set up logging
+    # Set up loggingc
     logger = logging.getLogger('System_Logger')
     logger.setLevel(logging.DEBUG) 
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     detector = Detector(model_name, logger)
 
     # TRACKER 
-    tracker = Tracker()
+    tracker = Tracker(logger=logger)
 
     # PROCESS VIDEO AND START TRACKING
     videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, logger=logger)

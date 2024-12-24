@@ -1,77 +1,77 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-import Track, Detection 
+# GENERATE COST MATRIX FOR TRACKS(ROWS) AND DETECTIONS(COLUMNS)
+def calculate_cost_matrix(tracks, detections):
+    num_tracks = len(tracks)
+    num_detections = len(detections)
+    n = max(num_tracks, num_detections)
 
-# LINEAR ASSIGNMENT
-# Generate cost matrix for tracks(rows) and detections(columns)
-def calculateCostMatrix(tracks, detections):
-    numTracks = len(tracks)
-    numDetections = len(detections)
-    n = max(numTracks, numDetections)
-
-    costMatrix = np.ones((n, n))
+    cost_matrix = np.ones((n, n))
 
     for i, track in enumerate(tracks):
         for j, detection in enumerate(detections):
-            costMatrix[i, j] = track.calculateCost(detection)
+            cost_matrix[i, j] = track.calculate_cost(detection)
     
-    return costMatrix
+    return cost_matrix
 
-# Check if the cost is less than the match threshold
-def matchThresholdPassed(cost, matchThreshold):
-    return cost <= matchThreshold
+# CHECK IF THE COST PASSES THE MATCH THRESHOLD
+def match_threshold_passed(cost, match_threshold):
+    return cost <= match_threshold
 
-def handleMatch(matchPassed, trackIndex, detectionIndex, matchedTracksDetections, unmatchedTracks, unmatchedDetections):
-    if(matchPassed):
-        matchedTracksDetections.append([trackIndex, detectionIndex])
+# HANDLE MATCHED TRACKS AND DETECTIONS
+# TODO: MAYBE HERE IT MAKES SENSE TO UPDATE TRACKS WITH DETECTIONS AND ONLY UPDATE THE TRACKS SINCE THE DETECTIONS WON'E BE NEEDED ANYMORE AFTER MATCHING THE TRACKS ANYWAYS
+def handle_match(match_passed, track_index, detection_index, matched_tracks_detections, unmatched_tracks, unmatched_detections):
+    if match_passed:
+        matched_tracks_detections.append([track_index, detection_index])
     else:
-        unmatchedTracks.append(trackIndex)
-        unmatchedDetections.append(detectionIndex)
+        unmatched_tracks.append(track_index)
+        unmatched_detections.append(detection_index)
 
-def linearAssignment(tracks, detections, matchThreshold=0.3):
-    
-    numTracks = len(tracks) 
-    numDetections = len(detections)
+# PERFORM LINEAR ASSIGNMENT
+def linear_assignment(tracks, detections, match_threshold=0.3):
+    num_tracks = len(tracks) 
+    num_detections = len(detections)
 
-    if(numTracks == 0 or numDetections == 0):
+    if num_tracks == 0 or num_detections == 0:
         return [], [], []
     
-    costMatrix = calculateCostMatrix(tracks, detections)
-    rowIndices, colIndices = linear_sum_assignment(costMatrix)
+    cost_matrix = calculate_cost_matrix(tracks, detections)
+    row_indices, col_indices = linear_sum_assignment(cost_matrix)
 
-    matchedTracksDetections = []
-    unmatchedTracks = []
-    unmatchedDetections = []
+    matched_tracks_detections = []
+    unmatched_tracks = []
+    unmatched_detections = []
 
-    if(numTracks == numDetections):
-        for trackIndex in range(numTracks):
-            detectionIndex = colIndices[trackIndex]
+    if num_tracks == num_detections:
+        for track_index in range(num_tracks):
+            detection_index = col_indices[track_index]
 
-            matchPassed = matchThresholdPassed(costMatrix[trackIndex, detectionIndex], matchThreshold)
-            handleMatch(matchPassed, trackIndex, detectionIndex, matchedTracksDetections, unmatchedTracks, unmatchedDetections)
+            match_passed = match_threshold_passed(cost_matrix[track_index, detection_index], match_threshold)
+            handle_match(match_passed, track_index, detection_index, matched_tracks_detections, unmatched_tracks, unmatched_detections)
     
     # If number of tracks is less than number of detections, the cost matrix will generate fake tracks  
-    # Since the rowIndices are ordered, all tracks greater than the number of tracks are fake, and so the corresponding detections are unmatched
-    elif numTracks < numDetections:
-        for trackIndex in range(numTracks):
-            detectionIndex = colIndices[trackIndex]
-            matchPassed = matchThresholdPassed(costMatrix[trackIndex, detectionIndex], matchThreshold)
-            handleMatch(matchPassed, trackIndex, detectionIndex, matchedTracksDetections, unmatchedTracks, unmatchedDetections)
+    # Since the row_indices are ordered, all tracks greater than the number of tracks are fake, and so the corresponding detections are unmatched
+    elif num_tracks < num_detections:
+        for track_index in range(num_tracks):
+            detection_index = col_indices[track_index]
+            match_passed = match_threshold_passed(cost_matrix[track_index, detection_index], match_threshold)
+            handle_match(match_passed, track_index, detection_index, matched_tracks_detections, unmatched_tracks, unmatched_detections)
         
-        for trackIndex in range(numTracks, numDetections):
-            detectionIndex = colIndices[trackIndex]
-            unmatchedDetections.append(detectionIndex)
+        for track_index in range(num_tracks, num_detections):
+            detection_index = col_indices[track_index]
+            unmatched_detections.append(detection_index)
 
     # If number of tracks is greater than number of detections, the cost matrix will generate fake detections
-    # Since the colIndices are not ordered, go through all of the tracks and check if they match with a valid detection (i.e. colIndeces[trackIndex] < numDetections)
+    # Since the col_indices are not ordered, go through all of the tracks and check if they match with a valid detection (i.e. col_indices[track_index] < num_detections)
     else:
-        for trackIndex in range(numTracks):
-            detectionIndex = colIndices[trackIndex]
-            if detectionIndex < numDetections:
-                matchPassed = matchThresholdPassed(costMatrix[trackIndex, detectionIndex], matchThreshold)
-                handleMatch(matchPassed, trackIndex, detectionIndex, matchedTracksDetections, unmatchedTracks, unmatchedDetections)
+        for track_index in range(num_tracks):
+            detection_index = col_indices[track_index]
+            if detection_index < num_detections:
+                match_passed = match_threshold_passed(cost_matrix[track_index, detection_index], match_threshold)
+                handle_match(match_passed, track_index, detection_index, matched_tracks_detections, unmatched_tracks, unmatched_detections)
             else: 
-                unmatchedTracks.append(trackIndex)
+                unmatched_tracks.append(track_index)
 
-    return matchedTracksDetections, unmatchedTracks, unmatchedDetections
+    return matched_tracks_detections, unmatched_tracks, unmatched_detections
+

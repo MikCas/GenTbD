@@ -6,6 +6,7 @@ from Detection import Detection
 from Trajectory import Trajectory
 from KalmanFilter import KalmanFilter
 
+# TODO: I WANT TO GO OVER THE FUNCTIONALITY OF THIS CLASS AGAIN, (TOGETHER WITH THE TRAJECOTR CLASS) TO SEE IF THERE NEEDS TO BE ANY CHANGES FOR BETTER FUNCTIONALITY
 class TrackState(Enum):
     NEW = 0     
     MATCHED = 1 
@@ -89,13 +90,13 @@ class Track:
 
         # TODO: DEACTIVATION CONDITION USED HERE (MAYBE DEFINE INTERNALLY)
         # LOST ->
-        elif self._trackState == TrackState.LOST:
+        elif self._track_state == TrackState.LOST:
             # LOST -> LOST (LOST COUNTER < MAX)
-            if self._lost_counter < Track._MAXLOSTCOUNT:
+            if self._lost_counter < Track._MAX_LOST_COUNT:
                 self.increment_lost_count()
             # LOST -> RESERVED (LOST COUNTER > MAX)
             else:
-                self._trackState = TrackState.RESERVED
+                self._track_state = TrackState.RESERVED
                 self.reset_lost_count()
 
     # TRACK HISTORY
@@ -106,6 +107,7 @@ class Track:
         return self._trajectory.get_most_recent_detection()
     
     def update_trajectory(self, frame_count, detection):
+        print(f"Updating trajectory for track {self.id} at frame {frame_count}")
         self._trajectory[frame_count] = detection
 
     def initialise_kalman_filter(self, detection):
@@ -136,6 +138,7 @@ class Track:
         cost = 1 - similarity
         return cost
     
+    # TODO: ADD ANOTEHR PARAMETER TO THIS SO THAT I CAN CHOOSE IF I WANT CERTAIN TRACKS TO BE A CERTAIN COLOR - LIEK NEW TRCAKS
     def display(self, frame):
         self._trajectory.get_most_recent_detection().display(frame, self.id)
 
