@@ -13,6 +13,9 @@ class TrackState(Enum):
     LOST = 2
     RESERVED = 3
 
+    def __str__(self):
+        return self.name
+    
 class Track:
 
     __slots__ = ['_id', '_track_state', '_lost_counter', '_trajectory', '_kalman_filter']
@@ -139,7 +142,23 @@ class Track:
     
     # TODO: ADD ANOTEHR PARAMETER TO THIS SO THAT I CAN CHOOSE IF I WANT CERTAIN TRACKS TO BE A CERTAIN COLOR - LIEK NEW TRCAKS
     def display(self, frame):
-        self._trajectory.get_most_recent_detection().display(frame, self.id)
+        # seed = self.track_state.value
+        # seed = self.id # CHANGE TO SEED TO HAVE UNIQUE COLOUR FOR EACH TRACK ID
+
+        label = f"{self.id} - {self.track_state}"
+        match self.track_state:
+            case TrackState.NEW:
+                colour = (255, 0, 0)
+            case TrackState.MATCHED:
+                colour = (0, 255, 0)
+            case TrackState.LOST:
+                colour = (0, 0, 255)
+            case TrackState.RESERVED:
+                colour = (255, 255, 0)
+            case _:
+                colour = (0, 0, 0)
+
+        self._trajectory.get_most_recent_detection().display(frame, label=label, colour=colour)
 
     def __repr__(self):
         return f"Track(ID={self.id}, State={self.track_state}, LostCount={self.lost_count}, TrajectoryLength={len(self.get_trajectory())})"

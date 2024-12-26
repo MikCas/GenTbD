@@ -27,7 +27,7 @@ class Tracker:
         self.initialize()
 
     def initialize(self):
-        self._logger.info(f"----INITIALISING TRACKER - {self._max_tracks} TRACKS - {self._detection_threshold} DETECTION THRESHOLD - {self._activation_threshold} ACTIVATION THRESHOLD")
+        self._logger.info(f"----INITIALISING TRACKER - {self._max_tracks} TRACKS - {self.get_detection_threshold()} DETECTION THRESHOLD - {self.get_activation_threshold()} ACTIVATION THRESHOLD - {self.get_match_threshold()} MATCH THRESHOLD")
         self._frame_count = 0
         self._new_tracks.clear()
         self._matched_tracks.clear()
@@ -53,12 +53,23 @@ class Tracker:
             return None
 
     # RETURN TO RESERVED TRACKS LIST
+    # TODO: MAYBE ADD A CHECK TO SEE IF THE TRACK IS NOT ALREADY IN THE RESERVED TRACKS LIST
+    # TODO: WHEN DEACTIVATING A TRACK, SHIULD I ALSO WIPE TRAJECOTRY?
     def return_reserved_track(self, track):
         self._reserved_tracks.append(track)
         self._logger.info(f"----TRACK {track.id} RETURNED TO RESERVED TRACKSS.")
         self.output_tracks(self._reserved_tracks, "RESERVED TRACKS")
 
     # GETTERS
+    def get_detection_threshold(self):
+        return self._detection_threshold
+    
+    def get_activation_threshold(self):
+        return self._activation_threshold
+    
+    def get_match_threshold(self):
+        return self._match_threshold
+
     def get_new_tracks(self):
         return self._new_tracks
     
@@ -74,15 +85,18 @@ class Tracker:
     def get_num_tracks(self, tracks):
         return len(tracks)
     
+    def update_frame_count(self, frame_count): 
+        self._frame_count = frame_count
+
     # CONDITIONS
     # DETECTION CONDITION TO PARTITION DETECTIONS 
     # TODO: CURRENTLY BASED ON CONFIDENCE SCORE BUT CAN BE CHANGED 
     def detection_condition(self, detection):
-        return detection.confidence_score >= self._detection_threshold
+        return detection.confidence_score >= self.get_detection_threshold()
     
     # ACTIVATE CONDITION FOR DETECTIONS TO BECOME NEW TRACKS
     def activate_condition(self, detection):
-        return detection.confidence_score >= self._activation_threshold
+        return detection.confidence_score >= self.get_activation_threshold()
     
     # PARTITION DETECTIONS BASED ON DETECTION THRESHOLD
     def partition_detections(self, detections):
@@ -103,7 +117,7 @@ class Tracker:
     # CHECKS IF A DETECTION PASSES THE ACTIVATION CONDITION AND ACTIVATES A NEW TRACK FROM THE RESERVED TRACKS
     # TODO: NEED TO DOUBLE CHECK WHAT THIS FUNCTION OTUPUTS WHEN ACTIVATE TRACK IS PASSED AND THERE ARE NO RESERVED TRACKS LEFT
     def activate_tracks(self, detections, tracks):
-        self._logger.info("----ACTIVATING")
+        # self._logger.info("----ACTIVATING")
         for detection in detections:
             if self.activate_condition(detection):
                 activated_track = self.take_reserved_track()
@@ -111,7 +125,6 @@ class Tracker:
                     activated_track.activate(self._frame_count, detection)
                     tracks.append(activated_track)
         
-
     # UPDATED MATCHED TRACKS WITH NEW DETECTIONS
     def process_matched_tracks(self, tracks, detections, matched_tracks):
         for track, detection in zip(tracks, detections):
@@ -130,7 +143,7 @@ class Tracker:
     # TODO: THIS IS BASED ON THE TREE DIAGRAM I WAS DRAWING, SO MAYBE DRAW A TREE DIAGRAM TO EXPLAIN THIS
     # PERFORM A CASCADED ASSIGNMENT TO CONTINUOUSLY MATCH TRACKS IN A NUMBER OF STAGES - GIVEN A LIST OF DETECTIONS (AND MATCH THRESHOLDS)
     def assignment(self, tracks, detections_list, match_thresholds):
-        self._logger.info("----ASSIGNMENT")
+        # self._logger.info("----ASSIGNMENT")
         matched_tracks_all = [] # TRACKS MATCHED ACROSS ALL ASSIGNMENT STAGES
         unmatched_detections_list = [] # UNMATCHED DETECTIONS LIST AT EACH ASSIGNMENT STAGE 
         curr_unmatched_tracks = tracks # CURRENT UNMATCHED TRACKS FOR FURTHER ASSIGNMENT
@@ -175,7 +188,7 @@ class Tracker:
         new_tracks = self._new_tracks
         
         detections_list = [detections]
-        match_thresholds = [0.3]
+        match_thresholds = [self.get_match_threshold()]
 
         matched_tracks, unmatched_tracks, unmatched_detections_list = self.assignment(new_tracks, detections_list, match_thresholds)
         matched_tracks_list = [matched_tracks]
@@ -184,11 +197,12 @@ class Tracker:
         self.track_management(matched_tracks_list, unmatched_tracks_list, unmatched_detections_list)
 
     # GENERAL TRACKING PROCEDURE
+    # TODO: CUSTOMISABLE ASSIGNMENT CASCADES 
     def subsequent_tracking(self, detections):
         self._logger.info(f"----SUBSEQUENT TRACKING")
         
-        matched_lost_tracks = self._matched_tracks + self._lost_tracks
-        new_tracks = self._new_tracks
+        matched_lost_tracks = self.get_matched_tracks() + self.get_lost_tracks()
+        new_tracks = self.get_new_tracks()
         
         detections_list = self.partition_detections(detections)
         match_thresholds1 = [0.3, 0.1]
@@ -209,8 +223,8 @@ class Tracker:
 
     # UPDATE TRACKS
     def update(self, frame_count, detections):
-        self._frame_count = frame_count
-        self._logger.info(f"----UPDATE")
+        self.update_frame_count(frame_count)
+        self._logger.info(f"----UPDATE TRACKER")
 
         num_new = self.get_num_tracks(self._new_tracks)  
         num_matched = self.get_num_tracks(self._matched_tracks)
@@ -226,19 +240,25 @@ class Tracker:
         else:
             self.subsequent_tracking(detections)
 
-        self._logger.info(f"----TRACK LISTS")
+        self._logger.info(f"--------TRACK LISTS")
         self.output_tracks(self._new_tracks, "NEW TRACKS")
         self.output_tracks(self._matched_tracks, "MATCHED TRACKS")
         self.output_tracks(self._lost_tracks, "LOST TRACKS")
 
     # DISPLAY
-    # TODO: DIFFERENT COLOURS FOR NEW, MATCHED AND LOST TRACKS
     def display_tracks(self, frame):
-        # for track in self._new_tracks + self._matched_tracks + self._lost_tracks:
-        for track in self._new_tracks + self._matched_tracks:
+        for track in self.get_new_tracks():
             track.display(frame)
+
+        for track in self.get_matched_tracks():
+            track.display(frame)
+
+        for track in self.get_lost_tracks():
+            track.display(frame) 
     
     # OUTPUT TRACKS
     def output_tracks(self, tracks, tracks_name):
        track_ids = [track.id for track in tracks]
-       self._logger.info(f"----{tracks_name} - {track_ids}")
+       self._logger.info(f"--------{tracks_name} - {track_ids}")
+
+

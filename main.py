@@ -38,7 +38,10 @@ if __name__ == '__main__':
     detector = Detector(model_name, logger)
 
     # TRACKER 
-    tracker = Tracker(logger=logger)
+    detection_threshold = 0.3
+    activation_threshold = 0.3
+    match_threshold = 0.3
+    tracker = Tracker(detection_threshold=detection_threshold, activation_threshold=activation_threshold, match_threshold=match_threshold, logger=logger)
 
     # PROCESS VIDEO AND START TRACKING
     videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, logger=logger)

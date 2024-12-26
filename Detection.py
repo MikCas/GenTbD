@@ -3,6 +3,7 @@ import random
 
 # IMPORT IDENTITY-PRESERVING PROPERTIES
 from properties.BoundingBox import BoundingBox
+
 # TODO: ADD APPEARANCE
 # TODO: ADD KEYPOINTS
 
@@ -47,13 +48,16 @@ class Detection:
         return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
     
     # DISPLAY DETECTION 
-    def display(self, frame, id=0):
-        color = self.random_colour_from_id(id)
+    def display(self, frame, label="", colour=None):
+                
+        # colour = self.random_colour_from_id(seed)
+
         x_min, y_min, x_max, y_max = map(int, self._bounding_box.xyxy())  # Convert to integers for drawing
-        label = f"{id} - {self._confidence_score:.2f}"
         
-        cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color, self._LINE_THICKNESS)
-        cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, self._LINE_THICKNESS)
+        label += f" - {self._confidence_score:.2f}" 
+        
+        cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), colour, self._LINE_THICKNESS)
+        cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, self._LINE_THICKNESS)
     
     def __repr__(self):
         return (f"Detection(ClassID={self._class_id}, "
