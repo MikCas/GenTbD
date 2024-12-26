@@ -226,6 +226,7 @@ class Tracker:
         else:
             self.subsequent_tracking(detections)
 
+        self._logger.info(f"----TRACK LISTS")
         self.output_tracks(self._new_tracks, "NEW TRACKS")
         self.output_tracks(self._matched_tracks, "MATCHED TRACKS")
         self.output_tracks(self._lost_tracks, "LOST TRACKS")
@@ -237,6 +238,7 @@ class Tracker:
         for track in self._new_tracks + self._matched_tracks:
             track.display(frame)
     
-    def output_tracks(self, tracks, track_name):
-        track_ids = [track.id for track in tracks]
-        self._logger.info(f"----" + track_name + ": { track_ids }")
+    # OUTPUT TRACKS
+    def output_tracks(self, tracks, tracks_name):
+       track_ids = [track.id for track in tracks]
+       self._logger.info(f"----{tracks_name} - {track_ids}")
