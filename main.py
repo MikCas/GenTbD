@@ -5,6 +5,8 @@ from Detector import Detector
 from Tracker import Tracker
 from VideoProcessor import VideoProcessor
 
+from Assignment import linear_assignment
+
 def setup_logger():
     # Set up loggingc
     logger = logging.getLogger('System_Logger')
@@ -21,7 +23,7 @@ def setup_logger():
     return logger
 
 if __name__ == '__main__':  
-
+    
     # LOGGER
     logger = setup_logger()
 
