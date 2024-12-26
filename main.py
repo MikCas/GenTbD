@@ -5,6 +5,8 @@ from Detector import Detector
 from Tracker import Tracker
 from VideoProcessor import VideoProcessor
 
+from collections import deque
+
 from Assignment import linear_assignment
 
 def setup_logger():
