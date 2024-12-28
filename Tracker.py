@@ -5,7 +5,7 @@ from Track import Track, TrackState
 from Assignment import linear_assignment
 
 class Tracker:
-    def __init__(self, max_tracks=100, detection_threshold=0.3, activation_threshold=0.3, match_threshold=0.1, logger=None):
+    def __init__(self, max_tracks=100, detection_threshold=0.3, activation_threshold=0.4, match_threshold=0.05, logger=None):
         
         # INITIALISE LOGGER, OTHERWISE USE DEFAULT LOGGER
         self._logger = logger if logger else logging.getLogger(__name__)
@@ -205,8 +205,8 @@ class Tracker:
         new_tracks = self.get_new_tracks()
         
         detections_list = self.partition_detections(detections)
-        match_thresholds1 = [0.3, 0.1]
-        match_thresholds2 = [0.3]
+        match_thresholds1 = [self.get_match_threshold(), 0.1]
+        match_thresholds2 = [self.get_match_threshold()]
 
         # ASSIGNMENT CASCADE 1 - MATCHED AND LOST TRACKS
         matched_tracks1, unmatched_tracks1, unmatched_detections_list1 = self.assignment(matched_lost_tracks, detections_list, match_thresholds1)
