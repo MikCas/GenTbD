@@ -12,12 +12,13 @@ class Tracker:
 
         # TRACKER PARAMETERS
         self._frame_count = 0
+        self._track_count = 1
         self._max_tracks = max_tracks
         self._detection_threshold = detection_threshold
         self._activation_threshold = activation_threshold
         self._match_threshold = match_threshold
 
-         # TRACK LISTS
+        # TRACK LISTS
         self._new_tracks = []
         self._matched_tracks = []
         self._lost_tracks = []
@@ -34,31 +35,33 @@ class Tracker:
         self._lost_tracks.clear()
         self._reserved_tracks.clear()
 
-        for i in range(self._max_tracks):
-            self.return_reserved_track(Track(i + 1))
+        # REMOVE - NO MORE INITIALISING WITH A NUMBER OF TRACKS
+        # for i in range(self._max_tracks):
+        #     self.return_reserved_track(Track(i + 1))
 
     def reset(self):
         self.initialize()
         self._logger.info("----RESET TRACKER")
 
-    # TAKE FROM RESERVED TRACKS LIST
-    def take_reserved_track(self):
-        if self._reserved_tracks:
-            track = self._reserved_tracks.popleft()
-            self._logger.info(f"----TRACK {track.id} TAKEN FROM RESERVED TRACKS.")
-            self.output_tracks(self._reserved_tracks, "RESERVED TRACKS")
-            return track
-        else:
-            self._logger.warning("----NO RESERVED TRACKS AVAILABLE")
-            return None
+    # REMOVE RESERVED TRACKS FUNCTIONALITY
+    # # TAKE FROM RESERVED TRACKS LIST
+    # def take_reserved_track(self):
+    #     if self._reserved_tracks:
+    #         track = self._reserved_tracks.popleft()
+    #         self._logger.info(f"----TRACK {track.id} TAKEN FROM RESERVED TRACKS.")
+    #         self.output_tracks(self._reserved_tracks, "RESERVED TRACKS")
+    #         return track
+    #     else:
+    #         self._logger.warning("----NO RESERVED TRACKS AVAILABLE")
+    #         return None
 
-    # RETURN TO RESERVED TRACKS LIST
-    # TODO: MAYBE ADD A CHECK TO SEE IF THE TRACK IS NOT ALREADY IN THE RESERVED TRACKS LIST
-    # TODO: WHEN DEACTIVATING A TRACK, SHIULD I ALSO WIPE TRAJECOTRY?
-    def return_reserved_track(self, track):
-        self._reserved_tracks.append(track)
-        self._logger.info(f"----TRACK {track.id} RETURNED TO RESERVED TRACKSS.")
-        self.output_tracks(self._reserved_tracks, "RESERVED TRACKS")
+    # # RETURN TO RESERVED TRACKS LIST
+    # # TODO: MAYBE ADD A CHECK TO SEE IF THE TRACK IS NOT ALREADY IN THE RESERVED TRACKS LIST
+    # # TODO: WHEN DEACTIVATING A TRACK, SHIULD I ALSO WIPE TRAJECOTRY?
+    # def return_reserved_track(self, track):
+    #     self._reserved_tracks.append(track)
+    #     self._logger.info(f"----TRACK {track.id} RETURNED TO RESERVED TRACKSS.")
+    #     self.output_tracks(self._reserved_tracks, "RESERVED TRACKS")
 
     # GETTERS
     def get_detection_threshold(self):
@@ -84,9 +87,12 @@ class Tracker:
 
     def get_num_tracks(self, tracks):
         return len(tracks)
-    
+
     def update_frame_count(self, frame_count): 
         self._frame_count = frame_count
+
+    def increment_track_count(self):   
+        self._track_count += 1
 
     # CONDITIONS
     # DETECTION CONDITION TO PARTITION DETECTIONS 
@@ -97,8 +103,37 @@ class Tracker:
     # ACTIVATE CONDITION FOR DETECTIONS TO BECOME NEW TRACKS
     def activate_condition(self, detection):
         return detection.confidence_score >= self.get_activation_threshold()
+
+    # TRACK MANAGEMENT
+    # CHECKS IF A DETECTION PASSES THE ACTIVATION CONDITION AND ACTIVATES A NEW TRACK FROM THE RESERVED TRACKS
+    # TODO: NEED TO DOUBLE CHECK WHAT THIS FUNCTION OTUPUTS WHEN ACTIVATE TRACK IS PASSED AND THERE ARE NO RESERVED TRACKS LEFT
+    def activate_tracks(self, detections, tracks):
+        # self._logger.info("----ACTIVATING")
+        for detection in detections:
+            if self.activate_condition(detection):
+                track = self.activate_track(detection)
+                tracks.append(track)
     
-    # PARTITION DETECTIONS BASED ON DETECTION THRESHOLD
+                # REMOVE THIS - NO MORE USING RESERVED TRACKS
+                # activated_track = self.take_reserved_track()
+                # if activated_track is not None:
+                #     activated_track.activate(self._frame_count, detection)
+                #     tracks.append(activated_track)
+    
+    def activate_track(self, detection):
+        track = Track(self._track_count)
+        track.activate(self._frame_count, detection)
+        self.increment_track_count()
+        self._logger.info(f"----TRACK {track.id} ACTIVATED.")
+
+        return track
+
+    def deactivate_track(self, track):
+        self._reserved_tracks.append(track)
+        self._logger.info(f"----TRACK {track.id} DEACTIVATED.")
+        self.output_tracks(self._reserved_tracks, "RESERVED TRACKS")
+
+        # PARTITION DETECTIONS BASED ON DETECTION THRESHOLD
     def partition_detections(self, detections):
         detections_high, detections_low = [], []
 
@@ -112,18 +147,6 @@ class Tracker:
         detections_low = [detection for detection in detections if not self.detection_condition(detection)]
 
         return [detections_high, detections_low]
-
-    # TRACK MANAGEMENT
-    # CHECKS IF A DETECTION PASSES THE ACTIVATION CONDITION AND ACTIVATES A NEW TRACK FROM THE RESERVED TRACKS
-    # TODO: NEED TO DOUBLE CHECK WHAT THIS FUNCTION OTUPUTS WHEN ACTIVATE TRACK IS PASSED AND THERE ARE NO RESERVED TRACKS LEFT
-    def activate_tracks(self, detections, tracks):
-        # self._logger.info("----ACTIVATING")
-        for detection in detections:
-            if self.activate_condition(detection):
-                activated_track = self.take_reserved_track()
-                if activated_track is not None:
-                    activated_track.activate(self._frame_count, detection)
-                    tracks.append(activated_track)
         
     # UPDATED MATCHED TRACKS WITH NEW DETECTIONS
     def process_matched_tracks(self, tracks, detections, matched_tracks):
@@ -138,7 +161,7 @@ class Tracker:
             if track.track_state == TrackState.LOST:
                 lost_tracks.append(track)
             elif track.track_state == TrackState.RESERVED:
-                self.return_reserved_track(track)
+                self.deactivate_track(track)
     
     # TODO: THIS IS BASED ON THE TREE DIAGRAM I WAS DRAWING, SO MAYBE DRAW A TREE DIAGRAM TO EXPLAIN THIS
     # PERFORM A CASCADED ASSIGNMENT TO CONTINUOUSLY MATCH TRACKS IN A NUMBER OF STAGES - GIVEN A LIST OF DETECTIONS (AND MATCH THRESHOLDS)
@@ -240,7 +263,7 @@ class Tracker:
         else:
             self.subsequent_tracking(detections)
 
-        self._logger.info(f"--------TRACK LISTS")
+        self._logger.info(f"----TRACK LISTS")
         self.output_tracks(self._new_tracks, "NEW TRACKS")
         self.output_tracks(self._matched_tracks, "MATCHED TRACKS")
         self.output_tracks(self._lost_tracks, "LOST TRACKS")

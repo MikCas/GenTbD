@@ -44,7 +44,7 @@ if __name__ == '__main__':
     tracker = Tracker(detection_threshold=detection_threshold, activation_threshold=activation_threshold, match_threshold=match_threshold, logger=logger)
 
     # PROCESS VIDEO AND START TRACKING
-    videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, logger=logger)
+    videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, continuous_mode=False, logger=logger)
     videoProcessor.process()
 
     # streamProcessor = VideoProcessor(isStream=True)

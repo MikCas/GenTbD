@@ -17,7 +17,7 @@ The system consists of three core components:
 3. **Tracker**: Updates and manages tracks based on detected objects.
 
 ### 1. Video Processor
-The `VideoProcessor` class handles video input, processes frames sequentially, and applies the detection and tracking system to each frame. It can work with video files or live streams. The video processor executed frame-by-frame, to continue to the next frame press `c`, to quit the program press `q`. 
+The `VideoProcessor` class handles video input, processes frames sequentially, and applies the detection and tracking system to each frame. It can work with video files or live streams. The video processor executed frame-by-frame, to continue to the next frame press `a`, to quit the program press `q`. 
 
 - `process()`: Runs the corresponding process method - START VIDEO PROCESSING
 - `process_video()`: Processes video file frame-by-frame.
@@ -38,9 +38,6 @@ video_processor = VideoProcessor(detector, tracker, video_path="video.mp4", is_s
 video_processor.process()  # Start processing the video
 ```
 
-#### TODO:
-- Have a view method which runs continuously - have a key which toggles between continuous and discreet viewing modes
-
 ### 2. Detector/Detections
 
 A `Detection` is a set of properties, with functionality to display the detection. Detections can also be compared using the `calculate_similarity(self, other_bounding_box)` function. 
@@ -60,14 +57,6 @@ The `Detector` takes a frame as input, and outputs a list of detections. This wi
 
 - `inference(self, frame)`: Takes a frame as input and outputs detections within the frame
 - `inference(self, cls, xyxy, conf)`: Obtain the Detection Properties from the inference results to generate a Detection Object
-
-#### TODO:
-- Create a distinction between IPP and NIPP properties (as an abstract class), such that IPP properties have some data structure and a corresponding similarity metric. 
-- IPPs to add 
-    - `Appearance`, n-dimensional vector with cosine similarity
-    - `Keypoint`, nx3 dimensional matrix - where (x, y, c) correspond to a position and confidence score of a keypoint. Using the similarity matrix defined in the Alpha Pose.
-- Modify the display() method in the Detection class as something is wrong. 
-- Create a Detector abstract class to use different detectors
 
 ### 3.1 Track
 The track is the **Preservation of Identity**. It is defined as a state machine and chnages state depending on whether it matched (Preserved Identity) or not matched (Not Preserved Identity) at a given frame. 
@@ -92,11 +81,6 @@ The attributes of a track:
 -`Trajectory` - The trajectory is an ordered dictionary that contains the _TRAJECTORY_MAX_SIZE previously matched detections to the current track.
 <!-- The trajecotry is an ordered dictionary whcih has detections mapped by frame number - indicating the frame when a track matched - with the latest added element being the last matched detection at the corresponding frame.   -->
 -`Calculating Cost` - The cost combines the different similarity metrics of a detection using different techniques to obtain a cost which determines how dissimilar the recently tracked object (recent element in the trajectory) and an object are. 
-
-#### TODO:
-- Update the trajectory to have a (start, end) timeline for each consecutive matching. 
-- Delete the trajectory of a track when deactivated
-- Customisable Activation/Deactivation Conditions
 
 ### 3.2 Tracker
 A Tracker in this context is a Track Manager which performs **Association** between tracks and detections, and also acts as a state manager updating the states of tracks after association. 
@@ -131,11 +115,6 @@ Using some attributes of tracks/detections which correspond to matching priority
 
 Some significatn attributes are `Confidence Score` for detections, `Track Age` for tracks. By prioritising association to the highest confidence detections first we are saying that we want them to match first as they are the most likely to match. 
 
-#### TODO:
-- Using NIPP specifically for partitioning in cascaded assignment
-- Remove Reserved Queue and implement a simpler no pre-specified amount of trackers to track with. So generate trackers as we go and remove them when they are done. 
--Integrate different cost combination techniques.
-
 #### BYTETRACK CASCADED ASSIGNMENT
 1. High Scoring Detections are matched with the Matched and Lost Tracks from the previous frame
 2. From the remaining Unmatched Tracks - Lost Tracks are classified as Lost again, while the remaining Matched Tracks are given another chance to match with the low-scoring detections. Again the remaining unmatched tracks are now classified as Lost.
@@ -143,10 +122,27 @@ Some significatn attributes are `Confidence Score` for detections, `Track Age` f
 4. The unmatched high scoring detections are matched with the New Tracks from the previous frame to see if they have the potential to match again. The New Tracks which do not match are removed
 5. The Remaining unmatched high-scoring detections from the second round are then determined to see if they can be new tracks.
 
+#### VP TODO:
+- Have a view method which runs continuously - have a key which toggles between continuous and discreet viewing modes - PRESS 't' to toggle continuous mode
+
+#### DETECTOR TODO:
+- Create a distinction between IPP and NIPP properties (as an abstract class), such that IPP properties have some data structure and a corresponding similarity metric. 
+- IPPs to add 
+    - `Appearance`, n-dimensional vector with cosine similarity
+    - `Keypoint`, nx3 dimensional matrix - where (x, y, c) correspond to a position and confidence score of a keypoint. Using the similarity matrix defined in the Alpha Pose.
+- Modify the display() method in the Detection class as something is wrong. 
+- Create a Detector abstract class to use different detectors
+
+#### TRACK TODO:
+- Update the trajectory to have a (start, end) timeline for each consecutive matching. 
+- Delete the trajectory of a track when deactivated
+- Customisable Activation/Deactivation Conditions
 
 
-
-
+#### TRACKER TODO:
+- Using NIPP specifically for partitioning in cascaded assignment
+- Remove Reserved Queue and implement a simpler no pre-specified amount of trackers to track with. So generate trackers as we go and remove them when they are done. 
+-Integrate different cost combination techniques.
 
 
 
