@@ -51,3 +51,8 @@ class Detector:
             detection = Detection(cls[i], bbox, conf[i])
             detections.append(detection)
         return detections
+    
+    def display_detections(self, detections, frame):
+        for detection in detections:
+            detection.display(frame)
+            # self.logger.info(f"Detection: {detection}")

@@ -17,7 +17,7 @@ class Tracker:
         self._activation_threshold = activation_threshold
         self._match_threshold = match_threshold
 
-        # TRACK LISTS
+         # TRACK LISTS
         self._new_tracks = []
         self._matched_tracks = []
         self._lost_tracks = []
@@ -41,7 +41,7 @@ class Tracker:
         self.initialize()
         self._logger.info("----RESET TRACKER")
 
-   # TAKE FROM RESERVED TRACKS LIST
+    # TAKE FROM RESERVED TRACKS LIST
     def take_reserved_track(self):
         if self._reserved_tracks:
             track = self._reserved_tracks.popleft()

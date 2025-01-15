@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # DETECTOR 
     model_name = 'yolo11n'
-    detector = Detector(model_name, logger)
+    detector = Detector(model_name, logger=logger)
 
     # TRACKER 
     detection_threshold = 0.3

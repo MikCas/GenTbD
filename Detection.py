@@ -48,7 +48,7 @@ class Detection:
         return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
     
     # DISPLAY DETECTION 
-    def display(self, frame, label="", colour=None):
+    def display(self, frame, label="", colour=None, seed=0):
                 
         # colour = self.random_colour_from_id(seed)
 

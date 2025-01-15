@@ -20,15 +20,15 @@ class Track:
 
     __slots__ = ['_id', '_track_state', '_lost_counter', '_trajectory', '_kalman_filter']
 
-    _MAX_LOST_COUNT = 10  # Max number of frames the track can be lost
-    _TRAJECTORY_MAX_SIZE = 10  # Max number of detections in the trajectory
+    _MAX_LOST_COUNT = 10       # Max number of frames the track can be lost
+    _TRAJECTORY_MAX_SIZE = 10  # Max number of objects in the trajectory
 
     def __init__(self, track_id, track_state=TrackState.RESERVED):
-        self._id = track_id                                             # Unique track ID
-        self._track_state = track_state                                 # Track state
-        self._lost_counter = 0                                          # Number of consecutive frames the track has been lost
+        self._id = track_id                                                  # Unique track ID
+        self._track_state = track_state                                      # Track state
+        self._lost_counter = 0                                               # Number of consecutive frames the track has been lost
         self._trajectory = Trajectory(max_size=Track._TRAJECTORY_MAX_SIZE)   # Trajectory acts like a LIFO queue
-        self._kalman_filter = KalmanFilter()                            # Kalman filter instance for tracking object state
+        self._kalman_filter = KalmanFilter()                                 # Kalman filter instance for tracking object state
 
     @property
     def id(self):
@@ -58,7 +58,7 @@ class Track:
         self._track_state = TrackState.NEW
         self.initialise_kalman_filter(detection)
         self.update_trajectory(frame_count, detection)
-
+    
     # UPDATE TRACK STATE IN THE CASE OF A MATCH
     def update_matched(self, frame_count, detection):
         # NEW -> MATCHED
@@ -158,7 +158,7 @@ class Track:
             case _:
                 colour = (0, 0, 0)
 
-        self._trajectory.get_most_recent_detection().display(frame, label=label, colour=colour)
+        self._trajectory.get_most_recent_detection().display(frame, label=label, colour=colour, seed=self.id)
 
     def __repr__(self):
         return f"Track(ID={self.id}, State={self.track_state}, LostCount={self.lost_count}, TrajectoryLength={len(self.get_trajectory())})"

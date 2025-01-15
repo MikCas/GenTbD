@@ -9,7 +9,7 @@ class VideoProcessor:
         self.logger = logger if logger else logging.getLogger(__name__)
         
         # SYSTEM PROPERTIES
-        self._current_frame = 1                                         # Current frame number
+        self._current_frame = 1                                          # Current frame number
         self._is_stream = is_stream                                      # Flag to determine if video is a stream or not
         self._detector = detector
         self._tracker = tracker
@@ -18,9 +18,9 @@ class VideoProcessor:
         self._cap = self.initialise_video_source(video_path)
 
         # VIDEO PROPERTIES
-        self._fps = self._cap.get(cv2.CAP_PROP_FPS)                     # Frames per second  
-        self._width = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))      # Frame width 
-        self._height = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    # Frame height  
+        self._fps = self._cap.get(cv2.CAP_PROP_FPS)                      # Frames per second  
+        self._width = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))       # Frame width 
+        self._height = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))     # Frame height  
         self._frame_count = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT)) # Total number of frames in the video
 
         # SET IMAGE SIZE FOR DETECTOR
@@ -50,9 +50,7 @@ class VideoProcessor:
     # PROCESS A SINGLE FRAME - PERFORM DETECTION AND TRACKING
     def process_frame(self, frame):
         detections = self._detector.inference(frame)
-        # for detection in detections:
-        #     detection.display(frame)
-        #     # self.logger.info(f"Detection: {detection}")
+        # self._detector.display_detections(detections, frame)
 
         self._tracker.update(self._current_frame, detections)
         self._tracker.display_tracks(frame)
@@ -108,5 +106,7 @@ class VideoProcessor:
             self.process_stream()
         else:
             self.process_video()
+
+    
 
 
