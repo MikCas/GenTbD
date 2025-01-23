@@ -1,8 +1,8 @@
-import cv2
-import random
-
 # IMPORT IDENTITY-PRESERVING PROPERTIES
 from properties.BoundingBox import BoundingBox
+
+import cv2
+import random
 
 # TODO: ADD APPEARANCE
 # TODO: ADD KEYPOINTS
@@ -25,6 +25,7 @@ class Detection:
         # IPP
         self._bounding_box = bounding_box
     
+    # PROPERTIES
     @property
     def class_id(self):
         return self._class_id
@@ -37,29 +38,36 @@ class Detection:
     def confidence_score(self):
         return self._confidence_score
     
+    # SIMILARITY
     # TODO: UPDATE THIS METHOD BY ADDING MORE PROPERTIES
     def calculate_similarity(self, other_bounding_box):
         similarity_iou = self._bounding_box.iou(other_bounding_box)
         return similarity_iou
     
+    # OUTPUT
     # RANDOM COLOUR GENERATOR BASED ON ID TO UNIQUELY IDENTIFY TRACKS
-    def random_colour_from_id(self, id):
-        random.seed(id)  
+    def random_colour(self, seed):
+        random.seed(seed)  
         return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
     
     # DISPLAY DETECTION 
     def display(self, frame, label="", colour=None, seed=0):
-                
-        # colour = self.random_colour_from_id(seed)
+        
+        # IF COLOUR IS NOT PROVIDED, GENERATE A RANDOM COLOUR
+        if colour is None:
+            colour = self.random_colour(seed)
 
-        x_min, y_min, x_max, y_max = map(int, self._bounding_box.xyxy())  # Convert to integers for drawing
-        
-        label += f" - {self._confidence_score:.2f}" 
-        
+        x_min, y_min, x_max, y_max = map(int, self._bounding_box.xyxy())  # BOUNDING BOX CORNERS
+        label += f" - {self._confidence_score:.2f}" # ADD CONFIDENCE SCORE TO LABEL
         cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), colour, self._LINE_THICKNESS)
         cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, self._LINE_THICKNESS)
     
-    def __repr__(self):
-        return (f"Detection(ClassID={self._class_id}, "
-                f"BoundingBox={self._bounding_box.__repr__(format='center')}, "
-                f"ConfidenceScore={self._confidence_score:.2f})")
+    def __repr__(self, format='corners'):
+        return (f"DET({self._bounding_box.__repr__(format=format)}, "
+                f"SCORE={self._confidence_score:.2f})")
+    # TODO: REMOVE THIS
+    # def __repr__(self):
+    #     return (f"Detection(ClassID={self._class_id}, "
+    #             f"BoundingBox={self._bounding_box.__repr__(format='center')}, "
+    #             f"ConfidenceScore={self._confidence_score:.2f})")
+    

@@ -1,8 +1,8 @@
-import logging
-from ultralytics import YOLO
-
 from properties.BoundingBox import BoundingBox
 from Detection import Detection
+
+import logging
+from ultralytics import YOLO
 
 class Detector:
 

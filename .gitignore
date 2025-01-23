@@ -2,6 +2,7 @@ __pycache__/
 data/
 gentbd/
 OLD/
+TD-gentbd/
 
 *.log
 *.tmp
