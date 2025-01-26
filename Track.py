@@ -1,10 +1,8 @@
+from enum import Enum
+
 from properties.BoundingBox import BoundingBox
-from Detection import Detection 
 from Trajectory import Trajectory
 from KalmanFilter import KalmanFilter
-
-from enum import Enum
-import numpy as np
 
 # TRACK STATE
 class TrackState(Enum):
@@ -20,10 +18,14 @@ class Track:
 
     __slots__ = ['_id', '_track_state', '_lost_counter', '_trajectory', '_kalman_filter']
 
-    # TODO: ADD AS PARAMETERS IN TRACKER
-    # STATIC VARIABLES
+    # STATIC
     _MAX_LOST_COUNT = 10       # MAX NUMBER OF FRAMES A TRACK CAN BE LOST
+    @classmethod
+    def set_max_lost_count(cls, value): cls._MAX_LOST_COUNT = value
+
     _TRAJECTORY_MAX_SIZE = 10  # MAX NUMBER OF DETECTIONS IN TRAJECTORY
+    @classmethod
+    def set_trajectory_max_size(cls, value): cls._TRAJECTORY_MAX_SIZE = value
 
     # CONSTRUCTOR
     def __init__(self, track_id, track_state=TrackState.RESERVED):
@@ -33,75 +35,83 @@ class Track:
         self._trajectory = Trajectory(max_size=Track._TRAJECTORY_MAX_SIZE)   # TRAJECTORY 
         self._kalman_filter = KalmanFilter()                                 # KALMAN FILTER
 
-    # TRACK STATE 
+    ####### TRACK STATE #######
     @property
     def id(self): return self._id
+
     @property
     def track_state(self): return self._track_state
-    @property
-    def lost_counter(self): return self._lost_counter
-    
     @track_state.setter
     def track_state(self, value): self._track_state = value
+
+    @property
+    def lost_counter(self): return self._lost_counter
     @lost_counter.setter
     def lost_counter(self, value): self._lost_counter = value
-
     def reset_lost_count(self): self.lost_counter = 0
     def increment_lost_count(self): self.lost_counter += 1
 
-    def activate(self, frame_count, detection):            # ACTIVATE TRACK - RESERVED -> NEW
+    # ACTIVATE TRACK - RESERVED -> NEW
+    def activate(self, frame_count, detection):            
         self.track_state = TrackState.NEW
         self.initialise_kalman_filter(detection)
         self.update_trajectory(frame_count, detection)
     
-    def update_matched(self, frame_count, detection):       # UPDATE TRACK STATE - MATCHED
-        if self.track_state == TrackState.NEW:              # NEW -> MATCHED
+    # UPDATE TRACK STATE - MATCHED
+    def update_matched(self, frame_count, detection): 
+        # NEW -> MATCHED      
+        if self.track_state == TrackState.NEW:             
             self.track_state = TrackState.MATCHED
             self.update_kalman_filter(detection)
             self.update_trajectory(frame_count, detection)
 
-        elif self.track_state == TrackState.MATCHED:        # MATCHED -> MATCHED
+        # MATCHED -> MATCHED
+        elif self.track_state == TrackState.MATCHED:        
             self.update_kalman_filter(detection)
             self.update_trajectory(frame_count, detection)
 
-        elif self.track_state == TrackState.LOST:           # LOST -> MATCHED 
+        # LOST -> MATCHED 
+        elif self.track_state == TrackState.LOST:           
             self.track_state = TrackState.MATCHED
             self.reset_lost_count()
             self.update_kalman_filter(detection)
             self.update_trajectory(frame_count, detection)
 
-    def update_unmatched(self):                             # UPDATE TRACK STATE - UNMATCHED
-        if self.track_state == TrackState.NEW:              # NEW -> RESERVED
+    # UPDATE TRACK STATE - UNMATCHED
+    def update_unmatched(self):   
+        # NEW -> RESERVED                          
+        if self.track_state == TrackState.NEW:              
             self.track_state = TrackState.RESERVED
             self.reset_lost_count()
 
-        elif self.track_state == TrackState.MATCHED:        # MATCHED -> LOST
+        # MATCHED -> LOST
+        elif self.track_state == TrackState.MATCHED:        
             self.track_state = TrackState.LOST
             self.increment_lost_count()
 
-        # TODO: DEACTIVATION CONDITION USED HERE (MAYBE DEFINE INTERNALLY)
-        elif self.track_state == TrackState.LOST:           # LOST ->
-            if self.lost_counter < Track._MAX_LOST_COUNT:   # LOST -> LOST (LOST COUNTER < MAX) 
+        # LOST ->
+        elif self.track_state == TrackState.LOST:  
+            # LOST -> LOST (LOST COUNTER < MAX)          
+            if self.lost_counter < Track._MAX_LOST_COUNT:   
                 self.increment_lost_count()
-            else:                                           # LOST -> RESERVED (LOST COUNTER > MAX)
+            else:           
+            # LOST -> RESERVED (LOST COUNTER > MAX)                                
                 self.track_state = TrackState.RESERVED
                 self.reset_lost_count()
 
-    # TRAJECTORY
+    ####### TRAJECTORY #######
     @property
-    def trajectory(self):
-        return self._trajectory
-    
+    def trajectory(self): return self._trajectory
+
     def update_trajectory(self, frame_count, detection):
         self.trajectory[frame_count] = detection
 
     def get_most_recent_detection(self):
         return self.trajectory.get_most_recent_detection()
     
-    # KALMAN FILTER
+    ####### KALMAN FILTER #######
     @property
-    def kalman_filter(self):
-        return self._kalman_filter
+    def kalman_filter(self): return self._kalman_filter
     
     def initialise_kalman_filter(self, detection):
         self.kalman_filter.initialise(detection.bounding_box)
@@ -117,17 +127,16 @@ class Track:
         width = prediction[2]
         height = prediction[3]
 
-        predicted_state = BoundingBox.from_corners(prediction[0], prediction[1], prediction[0] + width, prediction[1] + height)
-        return predicted_state
+        predicted_bounding_box = BoundingBox.from_corners(prediction[0], prediction[1], prediction[0] + width, prediction[1] + height)
+        return predicted_bounding_box
 
-    # COST 
-    # Calculate the similarity between the detection and the predicted state of the track/the most recent detection in the trajctory. Then combine the similarity scores (also using NIPP features) to calculate the cost.
-    # TODO: Update the cost by incorporating different similarity features
-    # TODO: Can also use statistics on the trajectory to calculate cost
-    # TODO: Can also use other NIPP features to calculate cost
+    ####### COST #######
+    # CALCULATE SIMILARITY BETWEEN DETECTION AND PREDICTED STATE
+    # TODO: ADD DIFFERENT METHODS TO COMBINE THE SIMILARITY SCORES - WEIGHTED SUMS, GATING, ETC..
+    # TODO: CAN ALSO USE NIPP FEATURES TO CALCULATE COST (MULTIPLE WITH CONFIDENCE SCORE)
     def calculate_cost(self, detection):
-        predicted_state = self.get_predicted_state()
-        similarity = detection.calculate_similarity(predicted_state)
+        predicted_bounding_box = self.get_predicted_state()
+        similarity = detection.calculate_bounding_box_similarity(predicted_bounding_box)
         cost = 1 - similarity
         return cost
     

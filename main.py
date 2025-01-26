@@ -2,6 +2,7 @@ import logging
 import os
 
 from Detector import Detector
+from Track import Track
 from Tracker import Tracker
 from VideoProcessor import VideoProcessor
 
@@ -25,13 +26,18 @@ if __name__ == '__main__':
 
     # DETECTOR 
     model_name = 'yolo11n'
-    detector = Detector(model_name, logger=logger)
+    confidence_threshold = 0.1
+    detector = Detector(model_name, confidence_threshold=confidence_threshold, logger=None)
 
-    # TRACKER 
+    # TRACK PARAMETERS
+    # Track.set_max_lost_count(15)
+    # Track.set_trajectory_max_size(20)
+    
+    # TRACKER
     detection_threshold = 0.3
     activation_threshold = 0.3
     match_threshold = 0.3
-    tracker = Tracker(detection_threshold=detection_threshold, activation_threshold=activation_threshold, match_threshold=match_threshold, logger=logger)
+    tracker = Tracker(detection_threshold=detection_threshold, activation_threshold=activation_threshold, match_threshold=match_threshold, logger=None)
 
     # PROCESS VIDEO AND START TRACKING
     videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, continuous_mode=False, logger=logger)

@@ -25,7 +25,7 @@ class VideoProcessor:
         self._frame_count = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT)) # Total number of frames in the video
 
         # SET IMAGE SIZE FOR DETECTOR
-        detector.set_img_size((self._height, self._width))
+        detector.imgsz = (self._height, self._width)
 
     def initialise_video_source(self, video_path):
         if self._is_stream:
@@ -54,7 +54,7 @@ class VideoProcessor:
         # self._detector.display_detections(detections, frame)
 
         self._tracker.update(self._current_frame, detections)
-        self._tracker.display_tracks(frame)
+        self._tracker.display_tracks(frame, mode='id')
 
         cv2.imshow('Frame', frame)
         return

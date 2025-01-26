@@ -24,20 +24,13 @@ class BoundingBox:
 
     # PROPERTIES
     @property
-    def width(self):
-        return abs(self._x_max - self._x_min)
-    
+    def width(self): return abs(self._x_max - self._x_min)
     @property
-    def height(self):
-        return abs(self._y_max - self._y_min)
-
+    def height(self): return abs(self._y_max - self._y_min)
     @property
-    def area(self):
-        return self.width * self.height
-
+    def area(self): return self.width * self.height
     @property
-    def center(self):
-        return (self._x_min + self._x_max) / 2, (self._y_min + self._y_max) / 2
+    def center(self): return (self._x_min + self._x_max) / 2, (self._y_min + self._y_max) / 2
     
     # REPRESENTATIONS
     def xyxy(self): return self._x_min, self._y_min, self._x_max, self._y_max

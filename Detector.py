@@ -1,58 +1,78 @@
+from ultralytics import YOLO
+
+# WRAPPER CLASS WHICH DEPENDS ON THE DETECTOR USED (MAYBE CREATE AS AN ABSTRACT CLASS)
+# UPDATE BASED ON THE PROPERTIES/PARAMETERS OF A DETECTOR
+# 1. MODEL NAME, MODEL PATH, IMG SIZE, CONFIDENCE THRESHOLD
+# 2. ANY OTHER PARAMETERS
+# 3. INFERENCE FUNCTION
+
 from properties.BoundingBox import BoundingBox
 from Detection import Detection
-
-import logging
-from ultralytics import YOLO
 
 class Detector:
 
     # CLASS CONSTANTS
     _HUMAN_CLASS = 0
-    _CONFIDENCE_THRESHOLD = 0.1
     
-    def __init__(self, model_name, logger=None):
+    def __init__(self, model_name, confidence_threshold=0.1, logger=None):
 
-        # INITIALISE LOGGER, OTHERWISE USE DEFAULT LOGGER
-        self._logger = logger if logger else logging.getLogger(__name__)
+        self._logger = logger if logger else None
 
         self._model_path = f"data/{model_name}.pt"
         self._model = YOLO(self._model_path)
+        self._confidence_threshold = confidence_threshold
         self._imgsz = (0, 0)
 
-        self._logger.info(f"----DETECTOR INITIALISED - MODEL {self._model_path}")
-        
-    def set_img_size(self, imgsz):
+        if self.logger: self.logger.info(f"########DETECTOR INITIALISED - MODEL {self._model_path}")
+    
+    # GETTERS/SETTERS
+    @property
+    def logger(self): return self._logger
+    @property
+    def confidence_threshold(self): return self._confidence_threshold
+    @property
+    def imgsz(self): return self._imgsz
+    @imgsz.setter
+    def imgsz(self, imgsz):
         self._imgsz = imgsz
         return
     
-    # PERFORM DETECTION ON FRAME
-    def inference(self, frame): 
-        self._logger.info("----DETECTING")
+    # DETECTION
+    def inference(self, frame):
+        if self.logger: self.logger.info("########DETECTING")
 
+        # INFERENCE
         try:
-            results = self._model.predict(frame, imgsz=self._imgsz, classes=[Detector._HUMAN_CLASS], conf=Detector._CONFIDENCE_THRESHOLD)
+            results = self._model.predict(frame, imgsz=self.imgsz, classes=[Detector._HUMAN_CLASS], conf=self.confidence_threshold)
         except Exception as e:
-            self._logger.error(f"----ERROR DURING INFERENCE: {e}")
+            if self.logger: self.logger.error(f"########ERROR DURING INFERENCE: {e}")
             return []
         
-        detections = []
-        for result in results:
-            boxes = result.boxes
-            cls, xyxy, conf = boxes.cls.cpu().numpy(), boxes.xyxy.cpu().numpy(), boxes.conf.cpu().numpy()
-            detections.extend(self.process_detections(cls, xyxy, conf))
+        # GET DETECTIONS FROM RESULTS
+        results = results[0]
+        boxes = results.boxes
+        if len(boxes) == 0:
+            return []
+            
+        # GET DETECTION DATA FROM RESULTS
+        cls_array = boxes.cls.cpu().numpy()
+        xyxy_array = boxes.xyxy.cpu().numpy() 
+        conf_array = boxes.conf.cpu().numpy()
+        
+        # CREATE DETECTIONS FROM DATA
+        detections = [
+            Detection(
+                cls_array[i],
+                BoundingBox.from_corners(*xyxy_array[i]),
+                conf_array[i]
+            )
+            for i in range(len(boxes))
+        ]
 
-        return detections
-    
-    # CREATES DETECTION OBJECTS FROM INFERENCE RESULTS
-    def process_detections(self, cls, xyxy, conf):
-        detections = []
-        for i in range(len(xyxy)):
-            bbox = BoundingBox.from_corners(*xyxy[i])
-            detection = Detection(cls[i], bbox, conf[i])
-            detections.append(detection)
+        if self.logger: self.logger.info(f"########DETECTIONS: {len(detections)}")
         return detections
     
     def display_detections(self, detections, frame):
         for detection in detections:
-            detection.display(frame)
-            # self.logger.info(f"Detection: {detection}")
+            detection.display(frame, colour=(255, 255, 255))
+            if self.logger: self.logger.info(f"############DETECTED: {detection}")
