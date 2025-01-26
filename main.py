@@ -5,23 +5,13 @@ from Detector import Detector
 from Tracker import Tracker
 from VideoProcessor import VideoProcessor
 
-from collections import deque
-
-from Assignment import linear_assignment
-
 def setup_logger():
-    # Set up loggingc
     logger = logging.getLogger('System_Logger')
     logger.setLevel(logging.DEBUG) 
-
-    # Define the format of log messages
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-    # StreamHandler sends log messages to the console
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s') # LOG MESSAGE FORMAT
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
-
     return logger
 
 if __name__ == '__main__':  

@@ -35,30 +35,19 @@ class Track:
 
     # TRACK STATE 
     @property
-    def id(self):
-        return self._id
-
+    def id(self): return self._id
     @property
-    def track_state(self):
-        return self._track_state
+    def track_state(self): return self._track_state
+    @property
+    def lost_counter(self): return self._lost_counter
     
     @track_state.setter
-    def track_state(self, value):
-        self._track_state = value
-
-    @property
-    def lost_counter(self):
-        return self._lost_counter
-    
+    def track_state(self, value): self._track_state = value
     @lost_counter.setter
-    def lost_counter(self, value):
-        self._lost_counter = value
+    def lost_counter(self, value): self._lost_counter = value
 
-    def reset_lost_count(self):
-        self.lost_counter = 0
-    
-    def increment_lost_count(self):
-        self.lost_counter += 1
+    def reset_lost_count(self): self.lost_counter = 0
+    def increment_lost_count(self): self.lost_counter += 1
 
     def activate(self, frame_count, detection):            # ACTIVATE TRACK - RESERVED -> NEW
         self.track_state = TrackState.NEW
@@ -91,8 +80,8 @@ class Track:
             self.increment_lost_count()
 
         # TODO: DEACTIVATION CONDITION USED HERE (MAYBE DEFINE INTERNALLY)
-        elif self.track_state == TrackState.LOST:          # LOST ->
-            if self.lost_counter < Track._MAX_LOST_COUNT:  # LOST -> LOST (LOST COUNTER < MAX) 
+        elif self.track_state == TrackState.LOST:           # LOST ->
+            if self.lost_counter < Track._MAX_LOST_COUNT:   # LOST -> LOST (LOST COUNTER < MAX) 
                 self.increment_lost_count()
             else:                                           # LOST -> RESERVED (LOST COUNTER > MAX)
                 self.track_state = TrackState.RESERVED
