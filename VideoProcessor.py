@@ -50,17 +50,22 @@ class VideoProcessor:
 
     # PROCESS A SINGLE FRAME - PERFORM DETECTION AND TRACKING
     def process_frame(self, frame):
-        detections = self._detector.inference(frame)
+        detections = self._detector.detect(frame)
+        self._detector.display_detections(detections, frame)
+
+        # detections = self._detector.inference(frame)
         # self._detector.display_detections(detections, frame)
 
-        self._tracker.update(self._current_frame, detections)
-        self._tracker.display_tracks(frame, mode='id')
+        # self._tracker.update(self._current_frame, detections)
+        # self._tracker.display_tracks(frame, mode='id')
 
         cv2.imshow('Frame', frame)
         return
 
     # PROCESS VIDEO - FRAME BY FRAME
     def process_video(self):
+
+        # cv2.namedWindow("TRACKING", cv2.WINDOW_NORMAL)
         
         while self._current_frame < self._frame_count:
             self._logger.info(f"----PROCESSING FRAME: {self._current_frame}")
@@ -72,25 +77,23 @@ class VideoProcessor:
 
             self.process_frame(frame)
 
-            # CONTINUOUS MODE - DOES NOT WORK YET
-            # if self._continuous_mode:
-            #     key = cv2.waitKey(1) & 0xFF  # Continue playing with short delay
-            # else:
-            #     key = cv2.waitKey(0) & 0xFF  # Wait for key press in discrete mode
+            # cv2.imshow("Video Processing", frame)
 
-            # CONTINUE OR EXIT VIDEO 
-            key = cv2.waitKey(0) & 0xFF
-            if key == ord('a'):
+            # HANDLE KEY EVENTS
+            key = cv2.waitKey(1) & 0xFF if self._continuous_mode else cv2.waitKey(0) & 0xFF
+            
+            if key == ord('a'):                                                 # 'a' - MANUAL ADVANCE
+                self._continuous_mode = False
                 self.increment_frame()
-                self._logger.info("----CONTINUING TO NEXT FRAME")
-                self._logger.info("------------------------------------------------------------")
-            # elif key == ord('c'):  # Toggle between continuous and discrete mode
-            #     self._continuous_mode = not self._continuous_mode
-            #     mode = "continuous" if self._continuous_mode else "discrete"
-            #     self._logger.info(f"----TOGGLED TO {mode.upper()} MODE")
-            elif key == ord('q'):
+            elif key == ord('c'):                                               # 'c' - TOGGLE CONTINUOUS MODE
+                self._continuous_mode = not self._continuous_mode
+                mode = "CONTINUOUS" if self._continuous_mode else "STEPPED"
+                self._logger.info(f"----TOGGLED TO {mode} MODE")
+            elif key == ord('q'):                                               # 'q' - QUIT PROCESSING
                 self._logger.info("----EXITING VIDEO PROCESSING")
                 break
+            elif self._continuous_mode:                                         # AUTO-ADVANCE IN CONTINUOUS MODE
+                self.increment_frame()
 
     # PROCESS STREAM - FRAME BY FRAME
     def process_stream(self):
