@@ -5,6 +5,7 @@ gentbd/
 OLD/
 TD-gentbd/
 
+*.gitignore
 *.log
 *.tmp
 *.swp
