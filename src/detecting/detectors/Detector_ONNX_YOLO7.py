@@ -1,10 +1,10 @@
+from properties.BoundingBox import BoundingBox
+from detecting.Detection import Detection
+
+import cv2
 import onnxruntime as ort 
 import numpy as np
-import cv2
 import time
-
-from properties.BoundingBox import BoundingBox
-from Detection import Detection
 
 def nms(boxes, scores, iou_threshold):
         # Sort by score
@@ -158,7 +158,7 @@ class Detector:
         scores = scores[mask]
         if len(scores) == 0: return [], [], []
 
-        # THURD FILTER - ONLY HUMAN CLASSES
+        # THIRD FILTER - ONLY HUMAN CLASSES
         class_ids = np.argmax(predictions[:, 5:], axis=1).astype(np.int32)
         mask = np.isin(class_ids, self._classes)
         predictions = predictions[mask]

@@ -62,11 +62,8 @@ class BoundingBox:
     # OUTPUT
     def __repr__(self, format='corners'):
         if format == 'corners':
-            # return f"BoundingBox(_x_min={self._x_min}, _y_min={self._y_min}, _x_max={self._x_max}, _y_max={self._y_max})"
             return f"BB(xyxy=[{self._x_min}, {self._y_min}, {self._x_max}, {self._y_max}])"
         elif format == 'center':
-            # return (f"BoundingBox(width={self.width}, height={self.height}, "
-            #         f"area={self.area}, center={self.center})")
             return f"BB(cxcywh=[{self.center[0]}, {self.center[1]}, {self.width}, {self.height}])"
         else:
             return f"BB(xyxy=[{self._x_min}, {self._y_min}, {self._x_max}, {self._y_max}])"

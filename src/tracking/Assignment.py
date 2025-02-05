@@ -1,7 +1,8 @@
+#TODO: MAYBE MOVE ALL OF THIS INTO TRACKER CLASS OR COMBINE WITH PARTITION CLASS
+from tracking.Partition import Partition 
+
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-
-from Partition import Partition 
 
 def match_condition(cost, match_threshold): return cost <= match_threshold
 

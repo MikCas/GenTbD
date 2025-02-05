@@ -1,3 +1,5 @@
+# TODO: CLEAN UP CODE
+
 import numpy as np
 
 class KalmanFilter:

@@ -1,10 +1,9 @@
+from detecting.detectors.Detector_ONNX_YOLO7 import Detector
+from tracking.Tracker import Tracker
+from VideoProcessor import VideoProcessor
+
 import logging
 import os
-
-from Detector import Detector
-from Track import Track
-from Tracker import Tracker
-from VideoProcessor import VideoProcessor
 
 def setup_logger():
     logger = logging.getLogger('System_Logger')
@@ -33,18 +32,21 @@ if __name__ == '__main__':
 
     # TRACK PARAMETERS
     # Track.set_max_lost_count(15)
-    # Track.set_trajectory_max_sizeaaaa(20)
+    # Track.set_trajectory_max_size(20)
     
     # TRACKER
     detection_threshold = 0.3
     activation_threshold = 0.3
     match_threshold = 0.2
-    tracker = Tracker(detection_threshold=detection_threshold, activation_threshold=activation_threshold, match_threshold=match_threshold, logger=None)
+    tracker = Tracker(detection_threshold=detection_threshold, activation_threshold=activation_threshold, match_threshold=match_threshold, logger=logger)
 
     # PROCESS VIDEO AND START TRACKING
-    videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, continuous_mode=False, logger=logger)
+    display_tracks_mode = 'state' # DISPLAY THE STATE OF EACH TRACK WITH A CORRESPONDING COLOUR - MATCHED, LOST, NEW
+    # display_tracks_mode = 'id' # DISPLAY THE UNIQUE ID OF EACH TRACK
+    videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, continuous_mode=False, display_tracks_mode=display_tracks_mode, logger=logger)
     videoProcessor.process()
 
+    # NOT USING STREAM PROCESSING FOR NOW
     # streamProcessor = VideoProcessor(isStream=True)
     # streamProcessor.process()
 

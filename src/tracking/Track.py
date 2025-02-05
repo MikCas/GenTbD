@@ -1,8 +1,8 @@
 from enum import Enum
 
 from properties.BoundingBox import BoundingBox
-from Trajectory import Trajectory
-from KalmanFilter import KalmanFilter
+from tracking.Trajectory import Trajectory
+from tracking.KalmanFilter import KalmanFilter
 
 # TRACK STATE
 class TrackState(Enum):

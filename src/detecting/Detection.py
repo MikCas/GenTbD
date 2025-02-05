@@ -1,14 +1,15 @@
-import cv2
-import random
-
 # TODO: ADD MORE PROPERTIES - APPEARANCE, KEYPOINTS 
 # HOW TO ADD MORE PROPERTIES:
 # 1. IF THE PROPERTY HAS A COMPLEX TYPE STRUCTURE AND IS IPP, THEN CREATE CLASS FOR IT IN PROPERTIES (EX. BOUNDING_BOX)
 # 2. UPDATE THE DETECTION CLASS __SLOTS__, CONSTRUCTOR, GETTER
 # 3. ADD PROPERTY SPECIFIC SIMILARITY METRIC IN CALCULATE SIMILARITY
+# 4. ADD PROPERTY SPECIFIC DISPLAY FUNCTION
 
 # IMPORT IDENTITY-PRESERVING PROPERTIES
 from properties.BoundingBox import BoundingBox
+
+import cv2
+import random
 
 class Detection:
 
@@ -42,7 +43,6 @@ class Detection:
         return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
     
     def display(self, frame, label="", colour=None, seed=0):
-        
         # IF COLOUR IS NOT PROVIDED, GENERATE A RANDOM COLOUR
         if colour is None:
             colour = self.random_colour(seed)

@@ -1,8 +1,8 @@
-import logging
+from tracking.Track import Track, TrackState
+from tracking.Partition import Partition
+from tracking.Assignment import linear_assignment
 
-from Track import Track, TrackState
-from Partition import Partition
-from Assignment import linear_assignment
+import logging
 
 class Tracker:
 
@@ -190,7 +190,7 @@ class Tracker:
        track_ids = [track.id for track in tracks]
        if self.logger: self.logger.info(f"////////{tracks_name} - {track_ids}")
 
-# # TODO: THIS IS BASED ON THE TREE DIAGRAM I WAS DRAWING, SO MAYBE DRAW A TREE DIAGRAM TO EXPLAIN THIS
+# # TODO: THIS IS BASED ON THE TREE DIAGRAM I MADE -
 # # PERFORM A CASCADED ASSIGNMENT TO CONTINUOUSLY MATCH TRACKS IN A NUMBER OF STAGES - GIVEN A LIST OF DETECTIONS (AND MATCH THRESHOLDS)
 # def cascaded_assignment(self, tracks, detections_list, match_thresholds):
 #     self._logger.info("----ASSIGNMENT")

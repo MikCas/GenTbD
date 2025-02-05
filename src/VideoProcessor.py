@@ -1,17 +1,17 @@
-import logging
 import cv2
-import sys
+import logging
 
 class VideoProcessor:
-    def __init__(self, detector, tracker, video_path=None, is_stream=False, continuous_mode = False, logger=None):
+    def __init__(self, detector, tracker, video_path=None, is_stream=False, continuous_mode=False, display_tracks_mode='state', logger=None):
         
         # INITIALISE LOGGER, OTHERWISE USE DEFAULT LOGGER
         self._logger = logger if logger else logging.getLogger(__name__)
         
         # SYSTEM PROPERTIES
-        self._current_frame = 1                                          # Current frame number
-        self._is_stream = is_stream                                      # Flag to determine if video is a stream or not
-        self._continuous_mode = continuous_mode                          # Flag to determine if video is processed in continuous mode
+        self._current_frame = 1                                          # CURRENT FRAME NUMBER
+        self._is_stream = is_stream                                      # FLAG TO DETERMINE IF VIDEO IS A STREAM
+        self._continuous_mode = continuous_mode                          # FLAG TO DETERMINE IF VIDEO PROCESSING IS IN CONTINUOUS MODE
+        self._display_tracks_mode = display_tracks_mode                  # MODE TO DISPLAY TRACKS - 'state' OR 'id'
         self._detector = detector
         self._tracker = tracker
 
@@ -19,10 +19,10 @@ class VideoProcessor:
         self._cap = self.initialise_video_source(video_path)
 
         # VIDEO PROPERTIES
-        self._fps = self._cap.get(cv2.CAP_PROP_FPS)                      # Frames per second  
-        self._width = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))       # Frame width 
-        self._height = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))     # Frame height  
-        self._frame_count = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT)) # Total number of frames in the video
+        self._fps = self._cap.get(cv2.CAP_PROP_FPS)                      # FRAMES PER SECOND
+        self._width = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))       # FRAME WIDTH
+        self._height = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))     # FRAME HEIGHT
+        self._frame_count = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT)) # TOTAL NUMBER OF FRAMES (IF VIDEO)
 
         # SET IMAGE SIZE FOR DETECTOR
         detector.imgsz = (self._height, self._width)
@@ -51,13 +51,10 @@ class VideoProcessor:
     # PROCESS A SINGLE FRAME - PERFORM DETECTION AND TRACKING
     def process_frame(self, frame):
         detections = self._detector.detect(frame)
-        self._detector.display_detections(detections, frame)
-
-        # detections = self._detector.inference(frame)
         # self._detector.display_detections(detections, frame)
 
-        # self._tracker.update(self._current_frame, detections)
-        # self._tracker.display_tracks(frame, mode='id')
+        self._tracker.update(self._current_frame, detections)
+        self._tracker.display_tracks(frame, mode=self._display_tracks_mode)
 
         cv2.imshow('Frame', frame)
         return
