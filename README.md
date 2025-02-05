@@ -1,10 +1,8 @@
 # GenTbD
-Generalized Tracking-by-Detection in Python 
-
-This is a tracking approach based on a **Detection** System which generates detections given some frame, and propogates these detections to a **Tracking** system which processes these detections in a temporal manner - with the aim of preserving the identity of these detections. 
+Generalised Tracking-by-Detection in Python 
 
 Features of genTbD:
-1. The detection is generalised in the sense that the system can expect ay attribute which would help in better tracking, as long as the cost function for the attribute is also provided. Currently there is only BoundingBox (Position) attributes - TBA: Appearance (using a re-id system) and Keypoints.
+1.The detection is generalised, in the sense that the system can expect ay attribute which would help in better tracking, as long as the cost function for the attribute is also provided. Currently there is only BoundingBox (Position) attributes - TBA: Appearance (using a re-id system) and Keypoints.
 2. A more streamlined tracking procedure, explicitly outlining the main features of a tracking procedure in a more intuitive way. Based on a defined track lifecycle.
 3. Different ways of incorporating multiple features - TBA: Weighted Sum and Gating Thresholds
 4. Easily changable tracking mechanism.
