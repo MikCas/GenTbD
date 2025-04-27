@@ -50,6 +50,7 @@ class VideoProcessor:
 
     # PROCESS A SINGLE FRAME - PERFORM DETECTION AND TRACKING
     def process_frame(self, frame):
+
         detections = self._detector.detect(frame)
         # self._detector.display_detections(detections, frame)
 

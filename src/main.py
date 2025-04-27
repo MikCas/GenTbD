@@ -20,7 +20,7 @@ if __name__ == '__main__':
     logger = setup_logger()
 
     # VIDEO FILE PATH
-    video_file = 'TownCent.mp4'
+    video_file = 'video1.mp4'
     video_path = os.path.join(os.getcwd(), 'data', video_file)
 
     # DETECTOR 
@@ -41,8 +41,8 @@ if __name__ == '__main__':
     tracker = Tracker(detection_threshold=detection_threshold, activation_threshold=activation_threshold, match_threshold=match_threshold, logger=logger)
 
     # PROCESS VIDEO AND START TRACKING
-    display_tracks_mode = 'state' # DISPLAY THE STATE OF EACH TRACK WITH A CORRESPONDING COLOUR - MATCHED, LOST, NEW
-    # display_tracks_mode = 'id' # DISPLAY THE UNIQUE ID OF EACH TRACK
+    # display_tracks_mode = 'state' # DISPLAY THE STATE OF EACH TRACK WITH A CORRESPONDING COLOUR - MATCHED, LOST, NEW
+    display_tracks_mode = 'id' # DISPLAY THE UNIQUE ID OF EACH TRACK
     videoProcessor = VideoProcessor(detector, tracker, video_path=video_path, continuous_mode=False, display_tracks_mode=display_tracks_mode, logger=logger)
     videoProcessor.process()
 
