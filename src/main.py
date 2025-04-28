@@ -5,7 +5,7 @@ This script initializes the logger, sets up the detector and tracker, and proces
 a video file to detect and track objects.
 """
 
-from detecting.detectors.Detector_ONNX_YOLO7 import Detector
+from Detection.Detectors.Detector_ONNX_YOLO7 import Detector as YOLOv7ONNX
 from tracking.Tracker import Tracker
 from Temporal.VideoProcessor import VideoProcessor
 
@@ -48,14 +48,13 @@ if __name__ == '__main__':
     # vp = VideoProcessor(video_path=video_path, logger=logger)
     # vp.process()
 
-
     # DETECTOR
-    model_name = 'yolov7_640x640.onnx'
+    model_path = 'models/yolov7_640x640.onnx'
     confidence_threshold = 0.1
     iou_threshold = 0.5
     classes = [0]
-    detector = Detector(
-        model_name,
+    detector = YOLOv7ONNX(
+        model_path,
         confidence_threshold=confidence_threshold,
         iou_threshold=iou_threshold,
         classes=classes,

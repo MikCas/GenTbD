@@ -1,3 +1,4 @@
+from typing import Optional
 from .AbstractProperty import AbstractProperty
 
 class BoundingBox(AbstractProperty):
@@ -24,7 +25,11 @@ class BoundingBox(AbstractProperty):
     def center(self): return (self._x_min + self._x_max) / 2, (self._y_min + self._y_max) / 2
 
     ### SETUP METHODS
-    def __init__(self, x_min=0.0, y_min=0.0, x_max=0.0, y_max=0.0):
+    def __init__(self, 
+                 x_min:float = 0.0,
+                 y_min:float = 0.0,
+                 x_max:float = 0.0,
+                 y_max:float = 0.0):
         """
         Initialize a BoundingBox instance.
 
@@ -48,7 +53,11 @@ class BoundingBox(AbstractProperty):
         self._y_max = float(y_max)
    
     @classmethod 
-    def from_corners(cls, x_min, y_min, x_max, y_max):
+    def from_corners(cls: int, 
+                     x_min: float, 
+                     y_min: float, 
+                     x_max: float, 
+                     y_max: float):
         """
         Create a BoundingBox instance from corner coordinates.
         Args:
@@ -62,7 +71,11 @@ class BoundingBox(AbstractProperty):
         return cls(float(x_min), float(y_min), float(x_max), float(y_max))
 
     @classmethod 
-    def from_center(cls, center_x, center_y, width, height):
+    def from_center(cls: int, 
+                    center_x: float, 
+                    center_y: float, 
+                    width: float, 
+                    height: float):
         """
         Create a BoundingBox instance from center coordinates and dimensions.
         Args:
@@ -79,42 +92,50 @@ class BoundingBox(AbstractProperty):
         y_max = float(center_y + height / 2)
         return cls(x_min, y_min, x_max, y_max)
 
-    ### SIMILARITY
-    def intersect(self, other):
+    ### FUNCTIONS
+    @staticmethod
+    def iou(box1: 'BoundingBox', box2: 'BoundingBox') -> float:
         """
-        Calculate the intersection of two bounding boxes.
+        Calculate the Intersection over Union (IoU) of two bounding boxes.
         Args:
-            other (BoundingBox): Another bounding box to intersect with.
+            box1 (BoundingBox): First bounding box.
+            box2 (BoundingBox): Second bounding box.
         Returns:
-            BoundingBox: A new BoundingBox instance representing the intersection.
-            None: If there is no intersection.
-        """
-        if not isinstance(other, BoundingBox):
-            raise TypeError("The other object must be an instance of BoundingBox.") 
-        x_min, y_min = max(self._x_min, other._x_min), max(self._y_min, other._y_min)
-        x_max, y_max = min(self._x_max, other._x_max), min(self._y_max, other._y_max)
-
-        # IF VALID INTERSECTION
-        if x_min < x_max and y_min < y_max:
-            return BoundingBox(x_min, y_min, x_max, y_max)
-        
-        return None
-
-    def similarity(self, other):
-        """
-        Calculate the similarity between this bounding box and another bounding box.
-        Args:
-            other (BoundingBox): Another bounding box to calculate similarity with.
-        Returns:    
             float: The IoU value between 0 and 1.
+        Raises:
+            TypeError: If either box1 or box2 is not an instance of BoundingBox.
         """
-        intersection = self.intersect(other)
-        if intersection is None:
+        if not isinstance(box1, BoundingBox) or not isinstance(box2, BoundingBox):
+            raise TypeError("Both arguments must be instances of BoundingBox. Got {type(box1)} and {type(box2)}")
+                
+        # Calculate intersection
+        x_min = max(box1._x_min, box2._x_min)
+        y_min = max(box1._y_min, box2._y_min)
+        x_max = min(box1._x_max, box2._x_max)
+        y_max = min(box1._y_max, box2._y_max)
+
+        # If there is no intersection, return 0.0
+        if x_min >= x_max or y_min >= y_max:
             return 0.0
 
-        intersection_area = intersection.area
-        union_area = self.area + other.area - intersection_area
-        return intersection_area / union_area
+        # Calculate areas
+        intersection_area = (x_max - x_min) * (y_max - y_min)
+        union_area = box1.area + box2.area - intersection_area
+
+        # Return IoU
+        return intersection_area / union_area if union_area > 0 else 0.0
+
+    def similarity(self, other: 'BoundingBox') -> float:
+        """
+        Calculate the similarity between this bounding box and another bounding box.
+
+        Args:
+            other (BoundingBox): Another bounding box to calculate similarity with.
+
+        Returns:
+            float: The IoU value between 0 and 1.
+        """
+        return BoundingBox.iou(self, other)
 
     ### OUTPUT
     def xyxy(self): return self._x_min, self._y_min, self._x_max, self._y_max
@@ -140,7 +161,7 @@ class BoundingBox(AbstractProperty):
             y_max=data.get("y_max", 0.0)
         )
     
-    def __repr__(self, format='corners'):
+    def __repr__(self, format: str ='corners'):
         if format == 'corners':
             return f"BB(xyxy=[{self._x_min}, {self._y_min}, {self._x_max}, {self._y_max}])"
         elif format == 'center':

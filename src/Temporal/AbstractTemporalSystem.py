@@ -33,7 +33,7 @@ class AbstractTemporalSystem(ABC):
         self._timestep: int = int(self._cap.get(cv2.CAP_PROP_POS_FRAMES))
         self._logger.info(f"TIMESTEP {self._timestep}")
 
-    ### SETUP METHODS
+    ### SETUP
     def create_video_capture(self, video_path: str) -> cv2.VideoCapture:
         cap: cv2.VideoCapture = cv2.VideoCapture(video_path)
         if not cap.isOpened():

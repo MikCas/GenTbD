@@ -1,6 +1,6 @@
 from enum import Enum
 
-from properties.BoundingBox import BoundingBox
+from Properties.BoundingBox import BoundingBox
 from tracking.Trajectory import Trajectory
 from tracking.KalmanFilter import KalmanFilter
 
@@ -136,7 +136,7 @@ class Track:
     # TODO: CAN ALSO USE NIPP FEATURES TO CALCULATE COST (MULTIPLE WITH CONFIDENCE SCORE)
     def calculate_cost(self, detection):
         predicted_bounding_box = self.get_predicted_state()
-        similarity = detection.calculate_bounding_box_similarity(predicted_bounding_box)
+        similarity = detection.calculate_similarity(predicted_bounding_box)
         cost = 1 - similarity
         return cost
     

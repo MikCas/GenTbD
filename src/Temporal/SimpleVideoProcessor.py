@@ -1,3 +1,4 @@
+from typing import Optional
 from Temporal.AbstractTemporalSystem import AbstractTemporalSystem
 import cv2
 

@@ -52,7 +52,7 @@ class VideoProcessor:
     def process_frame(self, frame):
 
         detections = self._detector.detect(frame)
-        # self._detector.display_detections(detections, frame)
+        self._detector.display_detections(detections, frame)
 
         self._tracker.update(self._current_frame, detections)
         self._tracker.display_tracks(frame, mode=self._display_tracks_mode)
