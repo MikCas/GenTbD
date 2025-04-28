@@ -6,8 +6,9 @@ from typing import Optional
 class AbstractTemporalSystem(ABC):
     """
     Abstract base class for processing temporal data (videos). 
-    Provides a framework for processing videos frame-by-frame, at each frame applying the process_frame method.
-    The class provides event handlers for saving frames, toggling between continuous and step-by-step modes, and quitting the video.
+        - Provides framework for processing videos frame-by-frame  
+        - At each frame, applies the process_frame method.
+        - Provides event handlers for saving frames, toggling between continuous and step-by-step modes, and quitting the video.
 
     Attributes:
         video_path (str): Path to the video file.
@@ -49,8 +50,6 @@ class AbstractTemporalSystem(ABC):
 
     def __init__(self, video_path: str, logger: Optional[logging.Logger] = None):
         """
-        Initializes the AbstractTemporalSystem with video source and logger.
-
         Args:
             video_path (str): Path to the video file.
             logger (Optional[logging.Logger]): Logger instance for logging messages (optional).
@@ -106,7 +105,7 @@ class AbstractTemporalSystem(ABC):
     
     def quit_event(self, key: int) -> bool:
         """
-        Handles the quit event
+        Event handler for quitting the video processing.
 
         Args:
             key (int): The key code of the pressed key.
@@ -143,7 +142,7 @@ class AbstractTemporalSystem(ABC):
                 raise RuntimeError("Error reading frame from video source.")
         return True
 
-    ### ABSTRACT METHODS
+    ### ABSTRACT METHODS (TO BE IMPLEMENTED BY SUBCLASSES)
     @abstractmethod
     def process_frame(self, frame: cv2.Mat) -> None:
         """

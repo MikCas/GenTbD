@@ -34,7 +34,7 @@ class Detection:
     # TODO: CREATE A SIMILARITY FUNCTION FOR EACH PROPERTY?, THEN IN THE COST FUNCTION WE CAN ADD THEM IN DIFFERENT WAYS
     # SIMILARITY
     def calculate_bounding_box_similarity(self, other_bounding_box):
-        similarity_iou = self._bounding_box.iou(other_bounding_box)
+        similarity_iou = self._bounding_box.similarity(other_bounding_box)
         return similarity_iou
 
     # OUTPUT
