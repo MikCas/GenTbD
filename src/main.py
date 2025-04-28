@@ -5,7 +5,7 @@ This script initializes the logger, sets up the detector and tracker, and proces
 a video file to detect and track objects.
 """
 
-from Detection.Detectors.Detector_ONNX_YOLO7 import Detector as YOLOv7ONNX
+from Detection.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
 from tracking.Tracker import Tracker
 from Temporal.VideoProcessor import VideoProcessor
 

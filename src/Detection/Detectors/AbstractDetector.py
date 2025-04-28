@@ -2,11 +2,11 @@ from Properties.BoundingBox import BoundingBox
 from Detection.Detection import Detection
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
-import logging
 import cv2
 import onnxruntime as ort
 import numpy as np
+from typing import Any, Optional
+import logging
 
 class AbstractDetector(ABC): 
     """
@@ -76,12 +76,12 @@ class AbstractDetector(ABC):
 
     ### FUNCTIONS 
     @abstractmethod
-    def create_detections(self, output: Any) -> list[Detection]:
+    def create_detections(self, data: tuple) -> list[Detection]:
         """
         Create Detection objects from the model output.
 
         Args:
-            output (Any): The model output.
+            data (tuple): The model output.
 
         Returns:
             list[Detection]: List of Detection objects.
@@ -100,7 +100,7 @@ class AbstractDetector(ABC):
             Any: The preprocessed image blob.
         """
         pass
-    
+
     @abstractmethod
     def inference(self, blob:np.ndarray) -> list:
         """
@@ -127,6 +127,19 @@ class AbstractDetector(ABC):
         """
         pass
 
+    @abstractmethod
+    def preprocess(self, image: cv2.Mat) -> np.ndarray:
+        """
+        Preprocess the input image for the detector.
+
+        Args:
+            image (cv2.Mat): The input image.
+
+    #     Returns:
+    #         Any: The preprocessed image blob.
+    #     """
+        pass
+    
     def detect(self, image:cv2.Mat) -> list[Detection]:
         """
         Detect objects in the image.
