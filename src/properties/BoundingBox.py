@@ -136,12 +136,12 @@ class BoundingBox(Property):
         """
         return BoundingBox.iou(self, other)
 
-    ### REPRESENTATION
+    ### DISPLAY
     def xyxy(self): return self._x_min, self._y_min, self._x_max, self._y_max
     def xywh(self): return self._x_min, self._y_min, self.width, self.height
     def cxcywh(self): return self.center, self.width, self.height
     
-    def __repr__(self, format: str ='corners'):
+    def __str__(self, format: str ='corners'):
         if format == 'corners':
             return f"BB(xyxy=[{self._x_min}, {self._y_min}, {self._x_max}, {self._y_max}])"
         elif format == 'center':
