@@ -1,6 +1,6 @@
 from Temporal.Temporal import Temporal
 from Detection.Detectors.Detector import Detector
-from tracking.Tracker import Tracker
+from Tracking.Tracker import Tracker
 
 from typing import Optional
 import cv2

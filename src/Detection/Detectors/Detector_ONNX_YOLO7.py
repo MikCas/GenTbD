@@ -4,6 +4,7 @@ from Detection.Detectors.Detector import Detector
 
 from abc import ABC
 import cv2
+import onnxruntime as ort
 import numpy as np
 import time
 
@@ -17,6 +18,13 @@ class YOLOv7ONNX(Detector):
         image_shape (tuple): Original image dimensions (height, width) [preprocess()
         scale (float): Scale factor for resizing [preprocess()]
         padding (tuple): Padding values (top, bottom, left, right) [preprocess()]
+
+        session (ort.InferenceSession): ONNX inference session.
+        input_names (list): List of input names for the model.
+        input_shape (tuple): Shape of the model input.
+        input_height (int): Height of the model input.
+        input_width (int): Width of the model input.
+        output_names (list): List of output names for the model.
     """   
 
     ### ATTRIBUTES
@@ -24,10 +32,46 @@ class YOLOv7ONNX(Detector):
     def logger(self): return self._logger
 
     ### SETUP
+    def create_onnx_model(self, model_path: str) -> None:
+        """
+        Set up the ONNX model.
+
+        Args:
+            model_path (str): Path to the ONNX model file.
+
+        Returns:
+            ort.InferenceSession: Inference session for the ONNX model.
+        """
+        try:
+            # Create the ONNX inference session
+            self._session = ort.InferenceSession(model_path, providers=['CoreMLExecutionProvider', 'CPUExecutionProvider']) # Apple Silicon
+            # session = ort.InferenceSession(model_path, providers=['CUDAExecutionProvider', 'CPUExecutionProvider']) # NVIDIA GPU
+            # session = ort.InferenceSession(model_path, providers=['OpenVINOExecutionProvider', 'CPUExecutionProvider']) # Intel CPU
+            # session = ort.InferenceSession(model_path, providers=['DmlExecutionProvider', 'CPUExecutionProvider']) # Windows GPU
+
+            # Model input details   
+            model_inputs = self._session.get_inputs()
+            self._input_names = [input.name for input in model_inputs]     # Names
+            self._input_shape = model_inputs[0].shape                      # Shape Ex. (1, 3, 640, 640)
+            self._input_height = self._input_shape[2]                      # Height
+            self._input_width = self._input_shape[3]                       # Width
+
+            # Model output details
+            model_outputs = self._session.get_outputs()
+            self._output_names = [output.name for output in model_outputs] # Names
+
+            if self._logger: self._logger.info(f"DETECTOR INITIALISED - MODEL {model_path}")
+
+        except Exception as e:
+            self._logger.error(f"COULD NOT LOAD ONNX MODEL: {e}")
+            raise
+
     def __init__(self, model_path, confidence_threshold=0.1, iou_threshold=0.5, classes=[0], logger=None):
         super().__init__(model_path, confidence_threshold, logger)
         self._iou_threshold = iou_threshold
         self._classes = classes
+
+        self.create_onnx_model(model_path)
 
     ### FUNCTONS 
     def extract_boxes(self, boxes_xywh: np.ndarray) -> np.ndarray:

@@ -6,8 +6,7 @@ a video file to detect and track objects.
 """
 
 from Detection.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
-from tracking.Tracker import Tracker
-from Temporal.VideoProcessorOld import VideoProcessor
+from Tracking.Tracker import Tracker
 from Temporal.VideoProcessor import SimpleVideoProcessor
 
 import logging

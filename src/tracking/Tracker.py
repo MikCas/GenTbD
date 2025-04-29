@@ -1,6 +1,6 @@
-from tracking.Track import Track, TrackState
-from tracking.Partition import Partition
-from tracking.Assignment import linear_assignment
+from Tracking.Track import Track, TrackState
+from Tracking.Partition import Partition
+from Tracking.Assignment import linear_assignment
 
 import logging
 

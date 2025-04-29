@@ -1,5 +1,4 @@
-#TODO: MAYBE MOVE ALL OF THIS INTO TRACKER CLASS OR COMBINE WITH PARTITION CLASS
-from tracking.Partition import Partition 
+from Tracking.Partition import Partition 
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
