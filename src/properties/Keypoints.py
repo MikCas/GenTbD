@@ -1,6 +1,6 @@
-from .AbstractProperty import AbstractProperty
+from .Property import Property
 
-class Keypoints(AbstractProperty):
+class Keypoints(Property):
     """
     A class representing a set of keypoints in 2D space.
     Each keypoint is represented by its (x, y) coordinates.

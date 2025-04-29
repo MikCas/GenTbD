@@ -7,7 +7,7 @@ import numpy as np
 from typing import Any, Optional
 import logging
 
-class AbstractDetector(ABC): 
+class Detector(ABC): 
     """
     Abstract base class for an ONNX detector.
 
@@ -130,7 +130,7 @@ class AbstractDetector(ABC):
             keep_boxes.append(current_box_index)
 
             # Compute IoU of the selected box with the remaining boxes
-            ious = AbstractDetector.compute_iou(boxes[current_box_index], boxes[sorted_indices[1:]])
+            ious = Detector.compute_iou(boxes[current_box_index], boxes[sorted_indices[1:]])
 
             # Filter out boxes with IoU above the threshold
             remaining_indices = np.where(ious < iou_threshold)[0]

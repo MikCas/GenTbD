@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class AbstractProperty:
+class Property:
     """
     Abstract class for properties.
     """

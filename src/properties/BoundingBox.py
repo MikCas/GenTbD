@@ -1,7 +1,6 @@
-from typing import Optional
-from .AbstractProperty import AbstractProperty
+from .Property import Property
 
-class BoundingBox(AbstractProperty):
+class BoundingBox(Property):
     """
     A class representing a bounding box in 2D space.
     Note that x increases from left to right (->) and y increases from top to bottom (v).

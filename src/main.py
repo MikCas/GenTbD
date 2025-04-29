@@ -7,7 +7,8 @@ a video file to detect and track objects.
 
 from Detection.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
 from tracking.Tracker import Tracker
-from Temporal.VideoProcessor import VideoProcessor
+from Temporal.VideoProcessorOld import VideoProcessor
+from Temporal.VideoProcessor import SimpleVideoProcessor
 
 import logging
 import os
@@ -45,9 +46,6 @@ if __name__ == '__main__':
     video_file = 'video1.mp4'
     video_path = os.path.join(os.getcwd(), 'data', video_file)
 
-    # vp = VideoProcessor(video_path=video_path, logger=logger)
-    # vp.process()
-
     # DETECTOR
     model_path = 'models/yolov7_640x640.onnx'
     confidence_threshold = 0.1
@@ -72,16 +70,22 @@ if __name__ == '__main__':
         logger=logger
     )
 
-    # PROCESS VIDEO AND START TRACKING
-    display_tracks_mode = 'id'  # Display the unique ID of each track
-    videoProcessor = VideoProcessor(
-        detector,
-        tracker,
-        video_path=video_path,
-        continuous_mode=False,
-        display_tracks_mode=display_tracks_mode,
-        logger=logger
-    )
-    videoProcessor.process()
+    # # PROCESS VIDEO AND START TRACKING
+    # display_tracks_mode = 'id'  # Display the unique ID of each track
+    # videoProcessor = VideoProcessor(
+    #     detector,
+    #     tracker,
+    #     video_path=video_path,
+    #     continuous_mode=False,
+    #     display_tracks_mode=display_tracks_mode,
+    #     logger=logger
+    # )
+    # videoProcessor.process()
+
+    vp = SimpleVideoProcessor(video_path=video_path, 
+                              detector=detector, 
+                              tracker=tracker, 
+                              logger=logger)
+    vp.process()
 
 

@@ -1,13 +1,13 @@
-from abc import ABC
 from Properties.BoundingBox import BoundingBox
 from Detection.Detection import Detection
-from Detection.Detectors.AbstractDetector import AbstractDetector
+from Detection.Detectors.Detector import Detector 
 
+from abc import ABC
 import cv2
 import numpy as np
 import time
 
-class YOLOv7ONNX(AbstractDetector):
+class YOLOv7ONNX(Detector):
     """
     YOLOv7 model in ONNX format.
     
@@ -210,7 +210,7 @@ class YOLOv7ONNX(AbstractDetector):
 
         # Step 5: Extract bounding boxes and apply non-maximum suppression (NMS)
         boxes = self.extract_boxes(predictions)
-        selected_indices = AbstractDetector.nms(boxes, scores, self._iou_threshold)
+        selected_indices = Detector.nms(boxes, scores, self._iou_threshold)
 
         # Return filtered boxes, class IDs, and scores
         return boxes[selected_indices], class_ids[selected_indices], scores[selected_indices]
