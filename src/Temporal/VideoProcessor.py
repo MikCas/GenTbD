@@ -11,9 +11,10 @@ class SimpleVideoProcessor(Temporal):
     """
 
     def __init__(self, *args, detector: Detector, tracker: Tracker, **kwargs):
+        super().__init__(*args, **kwargs)
         self._detector: Detector = detector
         self._tracker: Tracker = tracker
-        super().__init__(*args, **kwargs)
+        self._cap: cv2.VideoCapture = self.create_video_capture(self._video_path)
     
     def process_image(self, image: cv2.Mat) -> None:
         """

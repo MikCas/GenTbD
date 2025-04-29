@@ -57,7 +57,6 @@ class Temporal(ABC):
         self._video_path: str = video_path
         self._timestep: int = 0
         self._continuous_mode: bool = False # Start in step-by-step mode
-        self._cap: cv2.VideoCapture = self.create_video_capture(video_path)
         self._logger: logging.Logger = logger if logger else logging.getLogger(__name__)
 
     def cleanup(self) -> None:
@@ -140,7 +139,7 @@ class Temporal(ABC):
                 raise RuntimeError("Error reading frame from video source.")
         return image
     
-    ### ABSTRACT METHODS (TO BE IMPLEMENTED BY SUBCLASSES)
+    ### ABSTRACT METHODS
     @abstractmethod
     def process_image(self, image: cv2.Mat) -> None:
         """

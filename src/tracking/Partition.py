@@ -1,42 +1,51 @@
+from typing import List, Optional, Tuple
+
 class Partition:
+    """
+    This class is used to store and manage matched and unmatched elements between two sets (X and Y). 
 
-    # CONSTRUCTOR
-    def __init__(self, matches=None, unmatched_x=None, unmatched_y=None):
-        self._matches = matches if matches is not None else []
-        self._unmatched_x = unmatched_x if unmatched_x is not None else []
-        self._unmatched_y = unmatched_y if unmatched_y is not None else []
-    
-    # UNMATCHED PARTITION 
-    @classmethod
-    def create_unmatched(cls, xs, ys):
-        return cls(matches=None, unmatched_x=xs, unmatched_y=ys)
+    X U Y = MatchedX U MatchedY U UnmatchedX U UnmatchedY
 
-    # PROPERTIES
+    Attributes:
+        matched (List[Tuple], optional): A list of matched pairs between X and Y, Defaults to an empty list.
+        unmatched_x (List, optional): A list of unmatched elements from X, Defaults to an empty list.
+        unmatched_y (List, optional): A list of unmatched elements from Y, Defaults to an empty list.
+    """
+
+    ### ATTRIBUTES
     @property
-    def matches(self): return self._matches
+    def matched(self): return self._matched
     @property
     def unmatched_x(self): return self._unmatched_x
     @property
     def unmatched_y(self): return self._unmatched_y
 
-    # UTILITY
-    def is_empty(self):
-        return (len(self.matches) == 0 and 
-                len(self.unmatched_x) == 0 and
-                len(self.unmatched_y) == 0)
+    ### SETUP 
+    def __init__(self, 
+                matched: Optional[List[Tuple]] = None,
+                unmatched_x: Optional[List] = None, 
+                unmatched_y: Optional[List] = None):
+        self._matched = matched or []
+        self._unmatched_x = unmatched_x or []
+        self._unmatched_y = unmatched_y or []
 
-    def total_size(self):
-        return (len(self.matches) + 
-                len(self.unmatched_x) + 
-                len(self.unmatched_y))
+    ### UTILITIES
+    def is_empty(self) -> bool:
+        """
+        Check if the partition is empty.
 
-    def clear(self):
-        self.matches.clear()
+        Returns:
+            bool: True if there are no matched or unmatched elements, False otherwise.
+        """
+        return len(self._matched) == 0 and len(self._unmatched_x) == 0 and len(self._unmatched_y) == 0
+    def num_matched(self) -> int: return len(self._matched)
+    def num_unmatched_x(self) -> int: return len(self._unmatched_x)
+    def num_unmatched_y(self) -> int: return len(self._unmatched_y)
+    def clear(self) -> None:
+        self.matched.clear()
         self.unmatched_x.clear()
         self.unmatched_y.clear()
-
-    def __str__(self):
-        return (f"Partition:\n"
-                f"  Matches: {len(self.matches)}\n"
-                f"  Unmatched X: {len(self.unmatched_x)}\n"
-                f"  Unmatched Y: {len(self.unmatched_y)}")
+    def __str__(self) -> str:
+        return (
+            f"PARTITION[M: {self.num_matched()}, Ux: {self.num_unmatched_x()}, Uy: {self.num_unmatched_y()}]"
+        )

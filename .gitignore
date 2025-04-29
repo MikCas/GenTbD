@@ -2,8 +2,7 @@ __pycache__/
 data/
 models/
 gentbd/
-OLD/
-TD-gentbd/
+archive/
 
 *.gitignore
 *.log

@@ -105,7 +105,7 @@ class Tracker:
         if self.logger: self.logger.info("////////////MANAGE TRACKS")
         self.reset_tracks() # RESET MATCHED, LOST, NEW TRACKS
 
-        self.matched_tracks.extend(partition.matches) # MATCHED TRACKS - (MATCHES ALREADY PROCESSED INSIDE ASSIGNMENT FUNCTION)
+        self.matched_tracks.extend(partition.matched) # MATCHED TRACKS - (MATCHES ALREADY PROCESSED INSIDE ASSIGNMENT FUNCTION)
 
         for track in partition.unmatched_x: # UNMATCHED TRACKS
             track.update_unmatched()
@@ -136,11 +136,11 @@ class Tracker:
         partition2 = self.assignment(partition1.unmatched_x, detections_low, self.match_threshold)  # UNMATCHED PARTITION1 TRACKS (MATCHED AND LOST), WITH LOW SCORING DETECTIONS
         partition3 = self.assignment(self.new_tracks, partition1.unmatched_y, self.match_threshold) # NEW TRACKS WITH UNMATCHED HIGH SCORING DETECTIONS
 
-        matched_tracks = partition1.matches + partition2.matches + partition3.matches               # MATCHES FROM ALL ASSIGNMENTS
+        matched_tracks = partition1.matched + partition2.matched + partition3.matched               # MATCHES FROM ALL ASSIGNMENTS
         unmatched_tracks = partition2.unmatched_x + partition3.unmatched_x                          # UNMATCHED TRACKS FROM SECOND AND THIRD ASSIGNMENT (FIRST ASSIGNMENT UNAMTCHED TRACKS ARE PASSED ON TO THE NEXT ASSIGNMENT)
         unmatched_detections = partition3.unmatched_y                                               # UNMATCHED DETECTIONS FROM THIRD ASSIGNMENT - ONLY HIGH SCORING UNMATCHED DETECTIONS ARE PASSED
 
-        partition = Partition(matches=matched_tracks, unmatched_x=unmatched_tracks, unmatched_y=unmatched_detections)
+        partition = Partition(matched=matched_tracks, unmatched_x=unmatched_tracks, unmatched_y=unmatched_detections)
         self.track_management(partition)
 
         ####### TODO: ASSIGNMENT CASCADE IMPLEMENTATION #######

@@ -1,8 +1,8 @@
-from enum import Enum
-
 from Properties.BoundingBox import BoundingBox
 from Tracking.Trajectory import Trajectory
 from Tracking.KalmanFilter import KalmanFilter
+
+from enum import Enum
 
 # TRACK STATE
 class TrackState(Enum):
@@ -123,7 +123,7 @@ class Track:
     
     def get_predicted_state(self):
         # TODO: CHANEG THE TRAJCEOTRY AND KALMAN FILRER METHODS TO SNAKE CASE
-        prediction = self.kalman_filter.getState()
+        prediction = self.kalman_filter.get_state()
         width = prediction[2]
         height = prediction[3]
 

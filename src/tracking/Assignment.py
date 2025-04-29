@@ -20,7 +20,7 @@ def calculate_cost_matrix(xs, ys):
 def linear_assignment(frameCount, xs, ys, match_threshold):
 
     # EMPTY PARTITION
-    if len(xs) == 0 or len(ys) == 0: return Partition.create_unmatched(xs, ys)
+    if len(xs) == 0 or len(ys) == 0: return Partition(unmatched_x=xs, unmatched_y=ys)
 
     # CALCULATE COST MATRIX
     cost_matrix = calculate_cost_matrix(xs, ys)
@@ -46,4 +46,4 @@ def linear_assignment(frameCount, xs, ys, match_threshold):
             unmatched_xs.append(x)
             unmatched_ys.append(y)  
 
-    return Partition(matches, unmatched_xs, unmatched_ys)
+    return Partition(matched=matches, unmatched_x=unmatched_xs, unmatched_y=unmatched_ys)

@@ -23,7 +23,7 @@ class BoundingBox(Property):
     @property
     def center(self): return (self._x_min + self._x_max) / 2, (self._y_min + self._y_max) / 2
 
-    ### SETUP METHODS
+    ### SETUP 
     def __init__(self, 
                  x_min:float = 0.0,
                  y_min:float = 0.0,
@@ -136,29 +136,10 @@ class BoundingBox(Property):
         """
         return BoundingBox.iou(self, other)
 
-    ### OUTPUT
+    ### REPRESENTATION
     def xyxy(self): return self._x_min, self._y_min, self._x_max, self._y_max
     def xywh(self): return self._x_min, self._y_min, self.width, self.height
-    def cxcywh(self):
-        center_x, center_y = self.center
-        return center_x, center_y, self.width, self.height
-
-    def to_dict(self) -> dict:
-        return {
-            "x_min": self._x_min,
-            "y_min": self._y_min,
-            "x_max": self._x_max,
-            "y_max": self._y_max
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls(
-            x_min=data.get("x_min", 0.0),
-            y_min=data.get("y_min", 0.0),
-            x_max=data.get("x_max", 0.0),
-            y_max=data.get("y_max", 0.0)
-        )
+    def cxcywh(self): return self.center, self.width, self.height
     
     def __repr__(self, format: str ='corners'):
         if format == 'corners':
