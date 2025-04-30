@@ -1,12 +1,5 @@
-"""
-Main module for processing videos using object detection and tracking.
-
-This script initializes the logger, sets up the detector and tracker, and processes
-a video file to detect and track objects.
-"""
-
 from Detection.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
-from Tracking.Tracker import Tracker
+from Tracking.Trackers.SimpleTracker import SimpleTracker
 from Temporal.VideoProcessor import SimpleVideoProcessor
 
 import logging
@@ -32,20 +25,17 @@ if __name__ == '__main__':
     Main entry point of the application.
 
     This script performs the following:
-    1. Initializes the logger.
-    2. Sets up the video processor
-    3. Configures the object detector and tracker.
-    4. Processes the video file to detect and track objects.
+    1. Initialises the logger.
+    2. Configures the object detector.
+    3. Configures the tracker.
+    4. Sets up the video processor.
+    5. Processes the video file to detect and track objects.
     """
 
-    # 1. LOGGER
+    ##### 1. LOGGER #####
     logger = setup_logger()
 
-    # 2. VIDEO SETUP
-    video_file = 'video1.mp4'
-    video_path = os.path.join(os.getcwd(), 'data', video_file)
-
-    # DETECTOR
+    ##### 3. DETECTOR #####
     model_path = 'models/yolov7_640x640.onnx'
     confidence_threshold = 0.1
     iou_threshold = 0.5
@@ -58,13 +48,13 @@ if __name__ == '__main__':
         logger=logger
     )
 
-    # TRACKER
+    ##### 4. TRACKER #####
     detection_threshold = 0.3
-    activation_threshold = 0.3
+    creation_threshold = 0.3
     match_threshold = 0.2
-    tracker = Tracker(
+    tracker = SimpleTracker(
         detection_threshold=detection_threshold,
-        activation_threshold=activation_threshold,
+        creation_threshold=creation_threshold,
         match_threshold=match_threshold,
         logger=logger
     )
@@ -81,10 +71,15 @@ if __name__ == '__main__':
     # )
     # videoProcessor.process()
 
+    ##### 4. VIDEO SETUP #####
+    video_file = 'video1.mp4'
+    video_path = os.path.join(os.getcwd(), 'data', video_file)
+
     vp = SimpleVideoProcessor(video_path=video_path, 
                               detector=detector, 
                               tracker=tracker, 
                               logger=logger)
+    
     vp.process()
 
 

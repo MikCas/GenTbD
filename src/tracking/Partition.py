@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 class Partition:
     """
@@ -7,7 +7,7 @@ class Partition:
     X U Y = MatchedX U MatchedY U UnmatchedX U UnmatchedY
 
     Attributes:
-        matched (List[Tuple], optional): A list of matched pairs between X and Y, Defaults to an empty list.
+        matched (List optional): A list of matched elements. Defaults to an empty list.
         unmatched_x (List, optional): A list of unmatched elements from X, Defaults to an empty list.
         unmatched_y (List, optional): A list of unmatched elements from Y, Defaults to an empty list.
     """
@@ -22,7 +22,7 @@ class Partition:
 
     ### SETUP 
     def __init__(self, 
-                matched: Optional[List[Tuple]] = None,
+                matched: Optional[List] = None,
                 unmatched_x: Optional[List] = None, 
                 unmatched_y: Optional[List] = None):
         self._matched = matched or []

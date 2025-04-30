@@ -46,7 +46,7 @@ class KalmanFilter:
 
         # Measurement matrix (maps state to measurement space)
         self.stateUpdate = np.eye(4, 8)
-
+    
     def get_state(self) -> np.ndarray:
         """
         Get the current position (x, y, w, h) from the state vector.
@@ -158,3 +158,4 @@ class KalmanFilter:
         ) + measurementNoise
 
         return projectedState, projectedCovariance
+

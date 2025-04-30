@@ -12,7 +12,7 @@ class Property:
         pass
 
     @abstractmethod
-    def __repr__(self):
+    def __str__(self):
         """
         Returns a string representation of the property.
         """ 

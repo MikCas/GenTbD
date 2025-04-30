@@ -18,7 +18,7 @@ class Temporal(ABC):
         logger (logging.Logger): Logging messages
     """
 
-    ### ATTRIBUTES
+    ##### ATTRIBUTES #####
     @property
     def timestep(self) -> int: return self._timestep
 
@@ -31,9 +31,8 @@ class Temporal(ABC):
         Updates the current timestep based on the video capture position.
         """
         self._timestep: int = int(self._cap.get(cv2.CAP_PROP_POS_FRAMES))
-        self._logger.info(f"TIMESTEP {self._timestep}")
 
-    ### SETUP
+    ##### SETUP #####
     def create_video_capture(self, video_path: str) -> cv2.VideoCapture:
         cap: cv2.VideoCapture = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -64,7 +63,7 @@ class Temporal(ABC):
             self._cap.release()
         cv2.destroyAllWindows()
 
-    ### FUNCTIONS
+    ##### FUNCTIONS #####
     def save_event(self, key: int, image: cv2.Mat) -> bool:
         """
         Event handler for saving the current image to a file.
@@ -157,4 +156,14 @@ class Temporal(ABC):
         """
         pass
 
+    ##### DISPLAY #####
+    def log(self, level: int, message: str) -> None:
+        """
+        Log a message at the specified logging level.
+        Args:
+            level (int): Logging level (e.g., logging.INFO, logging.ERROR).
+            message (str): Message to log.
+        """
+        if self._logger:
+            self._logger.log(level, message)
 

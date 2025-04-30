@@ -16,16 +16,16 @@ class Detector(ABC):
         logger (Optional[logging.Logger]): Logger instance for logging messages (optional).
     """
 
-    ### SETUP 
+    ##### SETUP #####
     def __init__(self, 
                 model_path:str, 
                 confidence_threshold:float = 0.1, 
                 logger: Optional[logging.Logger] = None):
         self._model_path = model_path
         self._confidence_threshold = confidence_threshold
-        self._logger: logging.Logger = logger if logger else logging.getLogger(__name__)
+        self._logger = logger
 
-    ### STATIC METHODS
+    ##### DETECTION #####
     @staticmethod
     def compute_iou(box: np.ndarray, boxes: np.ndarray) -> np.ndarray:
         """
@@ -91,8 +91,7 @@ class Detector(ABC):
             sorted_indices = sorted_indices[remaining_indices + 1]
 
         return keep_boxes
-
-    ### ABSTRACT METHODS 
+ 
     @abstractmethod
     def create_detections(self, data: tuple) -> list[Detection]:
         """
@@ -145,7 +144,6 @@ class Detector(ABC):
         """
         pass
 
-    ### FUNCTIONALITY
     def detect(self, image:cv2.Mat) -> list[Detection]:
         """
         Detect objects in the image.
@@ -163,7 +161,17 @@ class Detector(ABC):
         detections = self.create_detections(output_data)       # CREATE DETECTIONS
         return detections
     
-    ### REPRESENTATION
+    ##### DISPLAY #####
+    def log(self, level: int, message: str) -> None:
+        """
+        Log a message at the specified logging level.
+        Args:
+            level (int): Logging level (e.g., logging.INFO, logging.ERROR).
+            message (str): Message to log.
+        """
+        if self._logger:
+            self._logger.log(level, message)
+
     def display_detections(self, detections: list[Detection], image: cv2.Mat) -> None:
         """
         Display detections on the given image.

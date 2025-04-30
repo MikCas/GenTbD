@@ -7,6 +7,7 @@ import cv2
 import onnxruntime as ort
 import numpy as np
 import time
+import logging
 
 class YOLOv7ONNX(Detector):
     """
@@ -27,11 +28,7 @@ class YOLOv7ONNX(Detector):
         output_names (list): List of output names for the model.
     """   
 
-    ### ATTRIBUTES
-    @property
-    def logger(self): return self._logger
-
-    ### SETUP
+    ##### SETUP #####
     def create_onnx_model(self, model_path: str) -> None:
         """
         Set up the ONNX model.
@@ -73,7 +70,7 @@ class YOLOv7ONNX(Detector):
 
         self.create_onnx_model(model_path)
 
-    ### FUNCTONS 
+    ##### DETECTION #####
     def extract_boxes(self, boxes_xywh: np.ndarray) -> np.ndarray:
         """
         Convert bounding boxes from center format (cx, cy, w, h) to corner format (x1, y1, x2, y2),
@@ -199,10 +196,10 @@ class YOLOv7ONNX(Detector):
         outputs = self._session.run(self._output_names, {self._input_names[0]: blob})
 
         # Log inference time if a logger is available
-        if self.logger:
+        if self._logger:
             inference_time_ms = (time.perf_counter() - start_time) * 1000
-            self.logger.info(f"Inference time: {inference_time_ms:.2f} ms")
-
+            self.log(logging.INFO, f"INFERENCE TIME: {inference_time_ms:.2f} ms")
+  
         return outputs
     def postprocess(self, outputs: list) -> tuple:
         """

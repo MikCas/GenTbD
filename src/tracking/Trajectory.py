@@ -92,12 +92,6 @@ class Trajectory(OrderedDict):
         return self.get(most_recent_timestep)
 
     def __str__(self) -> str:
-        """
-        Get a string representation of the trajectory.
-
-        Returns:
-            str: A string summarizing the trajectory's contents.
-        """
         return f"TRAJECTORY({list(self.items())})"
 
 

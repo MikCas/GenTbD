@@ -125,6 +125,6 @@ class Detection:
         self.draw_bounding_box(image, x_min, y_min, x_max, y_max, colour)
         self.draw_label(image, label_with_score, x_min, y_min, colour)
 
-    def __repr__(self, format='corners'):
-        return (f"DET({self._bounding_box.__repr__(format=format)}, "
+    def __str__(self, format='corners'):
+        return (f"DET({self._bounding_box.__str__(format=format)}, "
                 f"SCORE={self._confidence_score:.2f})")
