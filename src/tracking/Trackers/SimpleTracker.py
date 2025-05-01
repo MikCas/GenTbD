@@ -1,4 +1,4 @@
-from Detecting.Detections.Detection import Detection
+from Detecting.Detections.ObjectDetection import ObjectDetection as Detection
 from Tracking.Track import Track, TrackState
 from Tracking.Partition import Partition
 from Tracking.Trackers.Tracker import TrackList, Tracker
@@ -10,10 +10,7 @@ import cv2
 
 class SimpleTracker(Tracker):
     """
-    Simple tracker class for managing object tracking. 
-    Inherits from the Tracker class and implements the tracking logic.
-    This class is responsible for managing the state of tracks, including activation, deactivation, and assignment of detections to tracks.
-    It uses a linear assignment algorithm to match tracks with detections based on a cost matrix.
+    Inherits from the Tracker class and implements the tracking logic. Tracking algorithm is based on the ByteTrack algorithm https://github.com/ifzhang/ByteTrack.
 
     Attributes:
         detection_threshold (float): Threshold to determine if a detection is valid.
@@ -50,25 +47,11 @@ class SimpleTracker(Tracker):
         """
         return cost <= self._match_threshold
 
-
-
-    def detection_condition(self, detection: Detection) -> bool:
-        """
-        A detection is valid if the confidence is above the detection threshold.
-
-        Args:
-            detection: The detection to check.
-
-        Returns:
-            bool: True if the detection is valid, False otherwise.
-        """
-        return detection.confidence_score >= self._detection_threshold
-
     def partition_detections(self, detections: List[Detection]) -> Tuple[List[Detection], List[Detection]]:
         """
         Partitions the detections into two groups based on the detection condition:
-        1. High-confidence detections (valid detections)
-        2. Low-confidence detections (invalid detections)
+        1. High-confidence detections 
+        2. Low-confidence detections
 
         Args:
             detections (List[Detection]): List of detections to partition.
@@ -76,10 +59,17 @@ class SimpleTracker(Tracker):
         Returns:
             Tuple: A tuple containing the two detection lists
         """
-        valid_detections = [detection for detection in detections if self.detection_condition(detection)]
-        invalid_detections = [detection for detection in detections if not self.detection_condition(detection)]
-        return valid_detections, invalid_detections
-    
+
+        high_confidence_detections = []
+        low_confidence_detections = []
+
+        for detection in detections:
+            if detection.confidence_score >= self._detection_threshold:
+                high_confidence_detections.append(detection)
+            else:
+                low_confidence_detections.append(detection)
+
+        return high_confidence_detections, low_confidence_detections
 
     ####### LIFECYCLE #######
     def create(self, timestep: int, detection: Detection) -> Optional[Track]:
@@ -103,11 +93,11 @@ class SimpleTracker(Tracker):
         track = Track(self._id_count)
         track.creation(timestep, detection)
         self._new_tracks.add(track)
-        self.log(logging.INFO, "CREATED - {}".format(track))
+        self.log(logging.DEBUG, "\t//CREATED TRACK {}".format(track.id))
 
     def deactivate(self, track: Track) -> None:
         self._reserved_tracks.add(track)
-        self.log(logging.INFO, "TRACK {} DEACTIVATED".format(track))
+        self.log(logging.DEBUG, "\t//DEACTIVATED TRACK {}".format(track.id))
 
     def track_management(self, timestep: int, partition: Partition) -> None:
         """
@@ -118,7 +108,7 @@ class SimpleTracker(Tracker):
             timestep (int): The current timestep.
             partition (Partition): The partition of detections to manage.
         """
-        self.log(logging.INFO, "TRACK MANAGEMENT")
+        self.log(logging.INFO, "\t||TRACK MANAGEMENT")
         
         # Reset NEW, MATCHED, and LOST tracks
         self._new_tracks.reset()
@@ -144,8 +134,6 @@ class SimpleTracker(Tracker):
         for detection in partition.unmatched_y:
             self.create(timestep, detection)
 
-        self.log(logging.INFO, "TRACK MANAGEMENT - END")
-
     def cascaded_assignment(self, timestep: int, detections: List[Detection]) -> Partition: 
         """
         Perform cascaded assignment for iterative tracking.
@@ -162,14 +150,13 @@ class SimpleTracker(Tracker):
         Returns:
             Partition: A Partition object containing matched tracks, unmatched tracks, and unmatched detections.
         """
-        self.log(logging.INFO, "CASCADED ASSIGNMENT STARTED")
+        self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
 
         # Step 1: Partition detections into high and low confidence
         detections_high, detections_low = self.partition_detections(detections)
 
         # Step 2: Combine matched and lost tracks
         matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
-        self.log(logging.INFO, f"Matched and Lost Tracks: {matched_lost_tracks}")
 
         # Step 3: Assign high-confidence detections to matched and lost tracks
         partition1 = self.assignment(timestep, matched_lost_tracks, detections_high)
@@ -211,46 +198,28 @@ class SimpleTracker(Tracker):
             "matched": self._matched_tracks.length(),
             "lost": self._lost_tracks.length(),
         }
-        self.log(logging.INFO, f"UPDATE - (MATCHED:{track_counts['matched']}, LOST:{track_counts['lost']}, NEW:{track_counts['new']})")
+        self.log(logging.INFO, f"\t||UPDATE  MATCHED:{track_counts['matched']} - LOST:{track_counts['lost']} - NEW:{track_counts['new']}")
 
         # If not matched or lost tracks, create new tracks from detections
         if track_counts["matched"] == 0 and track_counts["lost"] == 0:
             # If no new tracks, create tracks from detections
             if track_counts["new"] == 0:
-                self.log(logging.INFO, "NO TRACKS - CREATING NEW TRACKS")
                 for detection in detections:
                     self.create(timestep, detection)
             # If new tracks, perform simple procedure
             else:
-                self.log(logging.INFO, "NEW TRACKS - ASSIGNMENT PROCEDURE")
                 partition = self.assignment(timestep, self._new_tracks, detections)
                 self.track_management(timestep, partition)
         else:
             # If matched or lost tracks, perform subsequent tracking procedure
-            self.log(logging.INFO, "MATCHED OR LOST TRACKS - COMPLEX ASSIGNMENT PROCEDURE")
             partition = self.cascaded_assignment(timestep, detections)
             self.track_management(timestep, partition)
 
-        self.log(logging.INFO, "{}".format(self._new_tracks))
-        self.log(logging.INFO, "{}".format(self._matched_tracks))
-        self.log(logging.INFO, "{}".format(self._lost_tracks))
+        self.log(logging.INFO, "\t||{}".format(self._new_tracks))
+        self.log(logging.INFO, "\t||{}".format(self._matched_tracks))
+        self.log(logging.INFO, "\t||{}".format(self._lost_tracks))
 
         # self._new_tracks.output_tracks()
         # self._matched_tracks.output_tracks()
         # self._lost_tracks.output_tracks()
         
-    ####### OUTPUT #######
-    def display_tracks(self, image: cv2.Mat, mode: str):
-        """
-        Displays the tracks on the image.
-        Args:
-            image (cv2.Mat): The image to display the tracks on.
-            mode (str): The mode to display the tracks in. Options are 'id', 'bbox', 'score'.
-        Raises: 
-            ValueError: If the mode is not 'id', 'bbox', 'state'
-        """
-        if mode not in ['id', 'state']:
-            raise ValueError("Invalid mode. Options are 'id', 'bbox', 'state'")
-        self._new_tracks.display(image, mode)
-        self._matched_tracks.display(image, mode)
-        self._lost_tracks.display(image, mode)

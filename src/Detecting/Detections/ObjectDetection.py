@@ -4,7 +4,7 @@ from Properties.BoundingBox import BoundingBox
 from typing import Optional
 import cv2
 
-class objectDetection(Detection):
+class ObjectDetection(Detection):
     """
     Detection subclass representing detected object in an image or video frame obtained from an object detector
 

@@ -29,7 +29,7 @@ if __name__ == '__main__':
     2. Configures the object detector.
     3. Configures the tracker.
     4. Sets up the video processor.
-    5. Processes the video file to detect and track objects.
+    5. Processes the video file to detect and track objects.q
     """
 
     ##### 1. LOGGER #####

@@ -1,5 +1,5 @@
 from Properties.BoundingBox import BoundingBox
-from Detecting.Detections.Detection import Detection
+from Detecting.Detections.ObjectDetection import ObjectDetection as Detection
 from Tracking.Trajectory import Trajectory
 from Tracking.KalmanFilter import KalmanFilter
 from enum import Enum
@@ -20,7 +20,7 @@ class TrackState(Enum):
     
 class Track:
     """
-    A class to represent a single track in the tracking system.
+    A class to represent an object identity in the tracking system.
 
     Attributes:
         id (int): Unique identifier for the track.
@@ -32,25 +32,11 @@ class Track:
 
     __slots__ = ['_id', '_track_state', '_lost_count', '_trajectory', '_kalman_filter']
 
-    ### SETUP
+    ##### CONSTANTS #####
     MAX_LOST_COUNT = 10  # Maximum number of frames a track can be lost
     TRAJECTORY_MAX_SIZE = 10  # Maximum number of detections in the trajectory
 
-    def __init__(self, id: int, track_state: TrackState = TrackState.RESERVED):
-        """
-        Initialize a Track instance.
-
-        Args:
-            id (int): Unique identifier for the track.
-            track_state (TrackState, optional): Initial state of the track. Defaults to RESERVED.
-        """
-        self._id = id
-        self._track_state = track_state
-        self._lost_count = 0
-        self._trajectory = Trajectory(max_size=Track.TRAJECTORY_MAX_SIZE)
-        self._kalman_filter = KalmanFilter()
-
-    ### ATTRIBUTES
+    ##### PROPERTIES #####
     @property
     def id(self) -> int: return self._id
 
@@ -70,6 +56,19 @@ class Track:
     @property
     def kalman_filter(self) -> KalmanFilter: return self._kalman_filter
 
+    ##### SETUP #####
+    def __init__(self, id: int, track_state: TrackState = TrackState.RESERVED):
+        """
+        Args:
+            id (int): Unique identifier for the track.
+            track_state (TrackState, optional): Initial state of the track. Defaults to RESERVED.
+        """
+        self._id = id
+        self._track_state = track_state
+        self._lost_count = 0
+        self._trajectory = Trajectory(max_size=Track.TRAJECTORY_MAX_SIZE)
+        self._kalman_filter = KalmanFilter()
+
     ### UTILITIES
     def reset(self, track_state: TrackState, detection: Detection) -> None:
         """
@@ -84,19 +83,44 @@ class Track:
         self._kalman_filter.predict()
 
     def reset_lost_count(self) -> None: self._lost_count = 0
+    def increment_lost_count(self) -> None: self._lost_count += 1
+    
     def initialise_kalman_filter(self, detection: Detection) -> None:
         """
-        Initialize the Kalman filter with the detection's bounding box.
+        Initialise the Kalman filter with the detection's bounding box.
 
         Args:
-            detection (Detection): Detection data to initialize the Kalman filter.
+            detection (Detection): Detection data to initialise the Kalman filter.
         """
         self._kalman_filter.initialise(detection.bounding_box)
         self._kalman_filter.predict()
+    def update_kalman_filter(self, detection: Detection) -> None:
+        """
+        Update the Kalman filter with the detection's bounding box.
 
+        Args:
+            detection (Detection): Detection data to update the Kalman filter.
+        """
+        self._kalman_filter.update(detection.bounding_box)
+        self._kalman_filter.predict()
+    def get_kalman_filter_state(self) -> Detection:
+        """
+        Get the predicted state from the Kalman filter.
 
+        Returns:
+            Detection: detection with a predicted bounding box.
+        """
+        prediction = self._kalman_filter.get_state()
+        width, height = prediction[2], prediction[3]
+        predicted_bounding_box =  BoundingBox.from_corners(
+            prediction[0], prediction[1], prediction[0] + width, prediction[1] + height
+        )
+        return Detection(
+            class_id=0,
+            bounding_box=predicted_bounding_box,
+            confidence_score=1.0
+        )
 
-    def increment_lost_count(self) -> None: self._lost_count += 1
     def update_trajectory(self, timestep: int, detection: Detection) -> None:
         """
         Update the trajectory with a new detection.
@@ -107,32 +131,11 @@ class Track:
         """
         self._trajectory[timestep] = detection
 
-    def update_kalman_filter(self, detection: Detection) -> None:
-        """
-        Update the Kalman filter with the detection's bounding box.
-
-        Args:
-            detection (Detection): Detection data to update the Kalman filter.
-        """
-        self._kalman_filter.update(detection.bounding_box)
-        self._kalman_filter.predict()
-    def get_predicted_state(self) -> BoundingBox:
-        """
-        Get the predicted state from the Kalman filter.
-
-        Returns:
-            BoundingBox: Predicted bounding box.
-        """
-        prediction = self._kalman_filter.get_state()
-        width, height = prediction[2], prediction[3]
-        return BoundingBox.from_corners(
-            prediction[0], prediction[1], prediction[0] + width, prediction[1] + height
-        )
-
-
+    ##### TRACKING #####
     def calculate_cost(self, detection: Detection) -> float:
         """
         Calculate the cost of associating a detection with the track.
+        The cost is calculated as 1 - similarity, where similarity is the similarity score between the predicted bounding box and the detection's bounding box.
 
         Args:
             detection (Detection): Detection to calculate the cost.
@@ -140,11 +143,11 @@ class Track:
         Returns:
             float: Cost value (cost = 1 - similarity).
         """
-        predicted_bounding_box = self.get_predicted_state()
-        similarity = detection.calculate_similarity(predicted_bounding_box)
+        predicted_detection = self.get_kalman_filter_state()
+        similarity = detection.calculate_similarity(predicted_detection)
         return 1 - similarity
 
-    ### STATE TRANSITIONS
+    ##### LIFECYCLE #####   
     def creation(self, timestep: int, detection: Detection) -> None:
         """
         RESERVED -> NEW
@@ -245,6 +248,7 @@ class Track:
     
         self.update_kalman_filter(detection)
         self.update_trajectory(timestep, detection)
+
     def update_unmatched(self) -> None:
         """
         Update the track when it is unmatched in the current frame.
@@ -263,10 +267,10 @@ class Track:
                 self._track_state = TrackState.RESERVED
                 self.reset_lost_count()
 
-    ### DISPLAY
-    def display_state(self, image: cv2.Mat, detection: Detection) -> None:
+    ##### DISPLAY #####
+    def draw_state(self, image: cv2.Mat, detection: Detection) -> None:
         """
-        Display a detection coloured based on its state.
+        Draw a detection coloured based on its state.
 
         Args:
             image (cv2.Mat): The frame to display the track on.
@@ -279,20 +283,20 @@ class Track:
             TrackState.LOST: (0, 0, 255),       # Red
             TrackState.RESERVED: (255, 255, 0)  # Cyan
         }.get(self._track_state, (0, 0, 0))      # Default to black
-        detection.display(image, label=label, colour=colour)
-    def display_id(self, image: cv2.Mat, detection: Detection) -> None:
+        detection.draw(image, label=label, colour=colour)
+    def draw_id(self, image: cv2.Mat, detection: Detection) -> None:
         """
-        Display a detection coloured uiniquely based on its ID.
+        Draw a detection coloured uniquely based on its ID.
 
         Args:
             image (cv2.Mat): The frame to display the track on.
             detection (Detection): The most recent detection of the track.
         """
         label = f"{self._id}"
-        detection.display(image, label=label, seed=self._id)
-    def display(self, image: cv2.Mat, mode: str = 'state') -> None:
+        detection.draw(image, label=label, seed=self._id)
+    def draw(self, image: cv2.Mat, mode: str = 'state') -> None:
         """
-        Display the most recent detection of a track on a frame.
+        Draw the most recent detection of a track on a frame.
 
         Args:
             image (cv2.Mat): The frame to display the track on.
@@ -308,9 +312,9 @@ class Track:
         # Get the most recent detection
         detection = self.trajectory.get_most_recent_detection()
         if mode == 'state':
-            self.display_state(image, detection)
+            self.draw_state(image, detection)
         elif mode == 'id':
-            self.display_id(image, detection)
+            self.draw_id(image, detection)
     def __str__(self) -> str:
         return (
             f"Track(ID={self._id}, STATE={self._track_state}, LOSTCNT={self.lost_count}, TRAJSIZE={self._trajectory}, MOSTRECENTDET={self._trajectory.get_most_recent_detection()})"

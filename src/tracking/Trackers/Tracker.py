@@ -74,22 +74,24 @@ class TrackList:
         return combined_track_list
 
     ##### DISPLAY #####
-    def display(self, image: cv2.Mat, mode: str) -> None:
+    def draw(self, image: cv2.Mat, mode: str) -> None:
         """
-        Display the tracks in the list.
+        Draw the tracks in the list.
         """
         for track in self._tracks:
-            track.display(image, mode)
+            track.draw(image, mode)
 
     def __str__(self):
         """
         String representation of the TrackList.
         """
-        return f"TRACKLIST({', '.join(state.name for state in self._track_states)}): {[track.id for track in self._tracks]}"
+        return f"TRACKS[{', '.join(state.name for state in self._track_states)}]={[track.id for track in self._tracks]}"
 
 class Tracker(ABC):
     """
-    Abstract class for trackers.
+    Abstract class for trackers, a tracker can be implemented using different assignment algorithms, based on a different number of detectors.
+    This class is responsible for managing the state of tracks, including activation, deactivation, and assignment of detections to tracks. 
+    It uses a linear assignment algorithm to match tracks with detections based on a cost matrix.
     
     Attributes:
         match_threshold (float): Threshold to determine if the cost of a match is valid.
@@ -101,7 +103,7 @@ class Tracker(ABC):
         reserved_tracks (TrackList): List of removed tracks.
     """
 
-    ##### ATTRIBUTES #####
+    ##### PROPERTIES #####
     
     ##### SETUP ##### 
     def __init__(self, 
@@ -296,23 +298,17 @@ class Tracker(ABC):
         if self._logger:
             self._logger.log(level, message)
 
-    # def output_tracks(self, track_list: TrackList) -> None:
-    #     """
-    #     Output the IDs of the tracks in the list
-    #     Args:
-    #         tracks (list[Track]): The list of tracks to output.
-    #         tracks_name (str): The name of the track list.
-    #     """
-    #     track_ids = [track.id for track in self._tracks]
-    #     self.log(logging.INFO, f"TRACKLIST: {self._track_state} - {track_ids}")
-
-    def display(self, image: cv2.Mat, mode: str) -> None:
+    def draw_tracks(self, image: cv2.Mat, mode: str):
         """
-        Display the tracks in the tracker.
+        Draws the tracks on the image.
         Args:
             image (cv2.Mat): The image to display the tracks on.
-            mode (str): The mode of display (e.g., "all", "matched", "lost").
+            mode (str): The mode to display the tracks in. Options are 'id', 'score'.
+        Raises: 
+            ValueError: If the mode is not 'id', 'state'
         """
-        self._new_tracks.display(image, mode)
-        self._matched_tracks.display(image, mode)
-        self._lost_tracks.display(image, mode)
+        if mode not in ['id', 'state']:
+            raise ValueError("Invalid mode. Options are 'id', 'bbox', 'state'")
+        self._new_tracks.draw(image, mode)
+        self._matched_tracks.draw(image, mode)
+        self._lost_tracks.draw(image, mode)

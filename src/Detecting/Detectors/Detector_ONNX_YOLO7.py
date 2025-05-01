@@ -1,5 +1,5 @@
 from Properties.BoundingBox import BoundingBox
-from Detecting.Detections.ObjectDetection import objectDetection as Detection
+from Detecting.Detections.ObjectDetection import ObjectDetection as Detection
 from Detecting.Detectors.Detector import Detector 
 
 from abc import ABC

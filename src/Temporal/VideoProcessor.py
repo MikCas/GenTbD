@@ -31,12 +31,12 @@ class SimpleVideoProcessor(Temporal):
         # Perform detection 
         self.log(logging.INFO, "|| DETECTION")  
         detections = self._detector.detect(image)
-        self._detector.draw_detections(detections, image)
+        # self._detector.draw_detections(detections, image)
 
         # Perform tracking
         self.log(logging.INFO, "|| TRACKING")
-        # self._tracker.update(self._timestep, detections)
-        # self._tracker.display_tracks(image, mode='state')
+        self._tracker.update(self._timestep, detections)
+        self._tracker.draw_tracks(image, mode='state')
 
         # Display image
         cv2.imshow('Processed Frame', image)

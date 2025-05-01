@@ -91,7 +91,6 @@ class Temporal(ABC):
         """
         if self._cap is not None:
             self._cap.release()
-            self.log(logging.INFO, "|| TERMINATED TEMPORAL COMPONENT")
         cv2.destroyAllWindows()
 
     ##### EVENT HANDLERS #####

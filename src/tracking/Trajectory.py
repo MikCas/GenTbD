@@ -14,9 +14,20 @@ class Trajectory(OrderedDict):
         max_size (int): The maximum number of detections to store in the trajectory.
                         If set to 0, the trajectory has no size limit.
     """
-
+    ##### PROPERTIES #####
     __slots__ = ['_max_size']
 
+    @property
+    def max_size(self) -> int:
+        """
+        Get the maximum size of the trajectory.
+
+        Returns:
+            int: The maximum number of detections the trajectory can store.
+        """
+        return self._max_size
+
+    ##### SETUP #####
     def __init__(self, *args, max_size: int = 0, **kwargs):
         """
         Initialize a Trajectory instance.
@@ -34,16 +45,7 @@ class Trajectory(OrderedDict):
         self._max_size = max_size
         super().__init__(*args, **kwargs)
 
-    @property
-    def max_size(self) -> int:
-        """
-        Get the maximum size of the trajectory.
-
-        Returns:
-            int: The maximum number of detections the trajectory can store.
-        """
-        return self._max_size
-
+    ##### FUNCTIONS #####
     def __setitem__(self, timestep: int, detection: Detection) -> None:
         """
         Add a detection to the trajectory.
@@ -59,6 +61,27 @@ class Trajectory(OrderedDict):
         # Remove the oldest item if the maximum size is exceeded
         if self._max_size > 0 and len(self) > self._max_size:
             self.popitem(last=False)
+
+    def has_timestep(self, timestep: int) -> bool:
+        """
+        Check if a specific timestep exists in the trajectory.
+
+        Args:
+            timestep (int): The timestep to check.
+
+        Returns:
+            bool: True if the timestep exists, False otherwise.
+        """
+        return timestep in self
+
+    def get_all_detections(self) -> list[Detection]:
+        """
+        Get all detections in the trajectory.
+
+        Returns:
+            list[Detection]: A list of all detections in the trajectory.
+        """
+        return list(self.values())
 
     def get_detection_at_timestep(self, timestep: int) -> Optional[Detection]:
         """
@@ -91,7 +114,14 @@ class Trajectory(OrderedDict):
         most_recent_timestep = self.get_most_recent_timestep()
         return self.get(most_recent_timestep)
 
+    ##### DISPLAY #####
     def __str__(self) -> str:
-        return f"TRAJECTORY({list(self.items())})"
+        """
+        String representation of the trajectory.
 
+        Returns:
+            str: A formatted string representing the timesteps in the trajectory.
+        """
+        timesteps = list(self.keys())
+        return f"TRAJ={timesteps}"
 

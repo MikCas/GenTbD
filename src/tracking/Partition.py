@@ -45,7 +45,3 @@ class Partition:
         self.matched.clear()
         self.unmatched_x.clear()
         self.unmatched_y.clear()
-    def __str__(self) -> str:
-        return (
-            f"PARTITION[M: {self.num_matched()}, Ux: {self.num_unmatched_x()}, Uy: {self.num_unmatched_y()}]"
-        )
