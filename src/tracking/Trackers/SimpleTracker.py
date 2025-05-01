@@ -13,6 +13,7 @@ class SimpleTracker(Tracker):
     Inherits from the Tracker class and implements the tracking logic. Tracking algorithm is based on the ByteTrack algorithm https://github.com/ifzhang/ByteTrack.
 
     Attributes:
+        match_thresholds (List[float]): List of thresholds for matching tracks and detections.
         detection_threshold (float): Threshold to determine if a detection is valid.
         creation_threshold (float): Threshold to determine if a detection can create a new track, based on its confidence score.
         activation_threshold (float): Threshold to determine if a track can be activated.
@@ -21,12 +22,14 @@ class SimpleTracker(Tracker):
 
     def __init__(self, 
                  *args, 
+                 match_thresholds = [0.2],
                  detection_threshold=0.3, 
                  creation_threshold=0.4,
                  activation_threshold = 5, 
                  deactivation_threshold = 10, 
                  **kwargs):
         super().__init__(*args, **kwargs)
+        self._match_thresholds = match_thresholds
         self._detection_threshold = detection_threshold         
         self._creation_threshold = creation_threshold
         self._activation_threshold = activation_threshold
@@ -34,10 +37,10 @@ class SimpleTracker(Tracker):
 
         self.log(logging.INFO,
             "|| TRACKER INITIALISED\n"
-            "\t\t\t\t    - MATCH THRESHOLD: {}\n"
+            "\t\t\t\t    - MATCH THRESHOLDS: {}\n"
             "\t\t\t\t    - DETECTION THRESHOLD: {}\n"
             "\t\t\t\t    - CREATION THRESHOLD: {}".format(
-            self._match_threshold, self._detection_threshold, self._creation_threshold
+            self._match_thresholds, self._detection_threshold, self._creation_threshold
             )
         )
     ####### TRACKING #######
@@ -198,7 +201,7 @@ class SimpleTracker(Tracker):
             self.create(timestep, detection)
 
     ##### ASSIGNMENT #####
-    def bytetrack_assignment(self, timestep: int, detections: List[Detection]) -> Partition: 
+    def bytetrack(self, timestep: int, detections: List[Detection]) -> Partition: 
         """
         Perform cascaded assignment for iterative tracking.
 
@@ -223,17 +226,17 @@ class SimpleTracker(Tracker):
         matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
 
         # Step 3: Assign high-confidence detections to matched and lost tracks
-        partition1 = self.assignment(timestep, matched_lost_tracks, detections_high)
+        partition1 = self.assignment(timestep, matched_lost_tracks, detections_high, self._match_thresholds[0])
 
         # Step 4: Assign low-confidence detections to unmatched tracks from partition1
         unmatched_tracks_partition1 = TrackList(
             track_states=matched_lost_tracks.track_states, 
             tracks=partition1.unmatched_x
         )
-        partition2 = self.assignment(timestep, unmatched_tracks_partition1, detections_low)
+        partition2 = self.assignment(timestep, unmatched_tracks_partition1, detections_low, self._match_thresholds[1])
 
         # Step 5: Assign unmatched high-confidence detections to new tracks
-        partition3 = self.assignment(timestep, self._new_tracks, partition1.unmatched_y)
+        partition3 = self.assignment(timestep, self._new_tracks, partition1.unmatched_y, self._match_thresholds[2])
 
         # Step 6: Combine results from all partitions
         matched_tracks_detections = partition1.matched + partition2.matched + partition3.matched
@@ -312,11 +315,11 @@ class SimpleTracker(Tracker):
                     self.create(timestep, detection)
             # If new tracks, perform simple procedure
             else:
-                partition = self.assignment(timestep, self._new_tracks, detections)
+                partition = self.assignment(timestep, self._new_tracks, detections, self._match_thresholds[0])
                 self.track_management(timestep, partition)
         else:
             # If matched or lost tracks, perform subsequent tracking procedure
-            partition = self.bytetrack_assignment(timestep, detections)
+            partition = self.bytetrack(timestep, detections)
             self.track_management(timestep, partition)
 
         self.log(logging.INFO, "\t||{}".format(self._new_tracks))

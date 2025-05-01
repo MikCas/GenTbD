@@ -94,7 +94,6 @@ class Tracker(ABC):
     It uses a linear assignment algorithm to match tracks with detections based on a cost matrix.
     
     Attributes:
-        match_threshold (float): Threshold to determine if the cost of a match is valid.
         logger (Optional[logging.Logger]): Logger instance for logging messages (optional).
         id_count (int): Counter for unique track IDs.
         new_tracks (TrackList): List of new tracks.
@@ -105,14 +104,11 @@ class Tracker(ABC):
 
     ##### SETUP ##### 
     def __init__(self, 
-                 match_threshold: float = 0.05,
                  logger: Optional[logging.Logger] = None):
         """
         Args:
-            match_threshold (float): Threshold to determine if the cost of a match is valid
             logger (Optional[logging.Logger], optional): Logger instance for logging messages (optional).
         """
-        self._match_threshold: float = match_threshold
         self._logger: logging.Logger = logger 
         self._id_count: int = 0
         
@@ -144,17 +140,6 @@ class Tracker(ABC):
         return self._id_count + 1
     
     ##### TRACKING #####
-    @abstractmethod
-    def match_condition(self, cost: float) -> bool:
-        """
-        Determines whether a match is valid based on the cost.
-        Args:
-            cost (float): The cost of the match.
-        Returns:
-            bool: True if match is valid (passes the condition), otherwise False. 
-        """
-        pass
-    
     def create_cost_matrix(self, xs: List[Detection], ys: List[Detection]) -> np.ndarray:
         """
         Create a cost matrix for matching detections in two sets.
@@ -178,13 +163,14 @@ class Tracker(ABC):
 
         return cost_matrix
     
-    def linear_assignment(self, timestep: int, xs: List[Track], ys: List[Detection]) -> Partition:
+    def linear_assignment(self, timestep: int, xs: List[Track], ys: List[Detection], match_threshold: float) -> Partition:
         """
         Perform linear assignment to match detections in two sets based on a cost matrix.
         Args:
             timestep (int): The current timestep.
             xs (list[Track]): The tracks to match
             ys (list[Detection]): The detections to match
+            match_threshold (float): Threshold to determine if the cost of a match is valid.
         Returns:
             Partition: A Partition object containing matched pairs and unmatched detections.
         """
@@ -207,8 +193,8 @@ class Tracker(ABC):
         for x_index, y_index in zip(matched_xs_indexes, matched_ys_indexes):
             cost = cost_matrix[x_index][y_index]
 
-            # Check if the match satisfies the condition
-            if self.match_condition(cost):
+            # If the cost is less than the threshold, consider it a match
+            if cost <= match_threshold:
                 matched.append((xs[x_index], ys[y_index]))
             else:
                 unmatched_xs.append(xs[x_index])
@@ -217,19 +203,20 @@ class Tracker(ABC):
         partition = Partition(matched=matched, unmatched_x=unmatched_xs, unmatched_y=unmatched_ys)
         return partition
 
-    def assignment(self, timestep: int, track_list: TrackList, detections: List[Detection]) -> Partition:
+    def assignment(self, timestep: int, track_list: TrackList, detections: List[Detection], match_threshold: float) -> Partition:
         """
         Naive assignment procedure to match tracks with detections.
         Args:
             timestep (int): The current timestep.
             tracks (TrackList): The list of tracks to match.
             detections (list[Detection]): The list of detections to track.
+            match_threshold (float): Threshold to determine if the cost of a match is valid.
         Returns:
             Partition: A Partition object containing matched pairs and unmatched detections.
         """
 
         # Perform linear assignment
-        partition = self.linear_assignment(timestep, track_list.tracks, detections)
+        partition = self.linear_assignment(timestep, track_list.tracks, detections, match_threshold)
         return partition
     
     # @abstractmethod
@@ -326,62 +313,57 @@ class Tracker(ABC):
             """
             pass
     
-    def cascaded_assignment(
-        self, 
-        tracks: TrackList, 
-        detections_list: List[List[Detection]], 
-        match_thresholds: List[float]
-    ) -> List[Partition]:
-        """
-        Perform cascaded assignment for iterative tracking.
+    # def cascaded_assignment(
+    #     self, 
+    #     tracks: TrackList, 
+    #     detections_list: List[List[Detection]], 
+    #     match_thresholds: List[float]
+    # ) -> List[Partition]:
+    #     """
+    #     Perform cascaded assignment for iterative tracking.
 
-        This procedure handles the assignment of detections to tracks in multiple stages.
-        At each stage, unmatched tracks are matched with a subset of detections using a specific match threshold.
+    #     This procedure handles the assignment of detections to tracks in multiple stages.
+    #     At each stage, unmatched tracks are matched with a subset of detections using a specific match threshold.
 
-        Args:
-            tracks (TrackList): List of tracks to be assigned.
-            detections_list (List[List[Detection]]): List of detection subsets for each stage.
-            match_thresholds (List[float]): List of match thresholds for each stage.
+    #     Args:
+    #         tracks (TrackList): List of tracks to be assigned.
+    #         detections_list (List[List[Detection]]): List of detection subsets for each stage.
+    #         match_thresholds (List[float]): List of match thresholds for each stage.
 
-        Returns:
-            List[Partition]: A list of Partition objects, one for each stage of the assignment.
-                            The last Partition contains the unmatched tracks and detections.
-        """
-        self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
+    #     Returns:
+    #         List[Partition]: A list of Partition objects, one for each stage of the assignment.
+    #                         The last Partition contains the unmatched tracks and detections.
+    #     """
+    #     self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
 
-        # Initialize results
-        partitions = []  # List to store partitions for each stage
-        curr_unmatched_tracks = tracks  # Tracks remaining unmatched for further assignment
+    #     # Initialize results
+    #     partitions = []  # List to store partitions for each stage
+    #     curr_unmatched_tracks = tracks  # Tracks remaining unmatched for further assignment
 
-        # Iterate through each stage of assignment
-        for detections, match_threshold in zip(detections_list, match_thresholds):
-            # Perform linear assignment for the current stage
-            partition = self.linear_assignment(
-                timestep=None,  # Assuming timestep is not needed here
-                xs=curr_unmatched_tracks,
-                ys=detections
-            )
+    #     # Iterate through each stage of assignment
+    #     for detections, match_threshold in zip(detections_list, match_thresholds):
+    #         # Perform linear assignment for the current stage
+    #         partition = self.linear_assignment(
+    #             timestep=None,  # Assuming timestep is not needed here
+    #             xs=curr_unmatched_tracks,
+    #             ys=detections
+    #         )
 
-            # Perform assignment between tracks and detections given the match threshold
-            self.assignment(
-                timestep=None,  # Assuming timestep is not needed here
-                track_list=curr_unmatched_tracks,
-                detections=detections
-            )
+    #         # Perform assignment between tracks and detections given the 
 
-            # Update the partition with filtered matches
-            partition._matched = filtered_matches
+    #         # Update the partition with filtered matches
+    #         partition._matched = filtered_matches
 
-            # Add the partition to the results
-            partitions.append(partition)
+    #         # Add the partition to the results
+    #         partitions.append(partition)
 
-            # Update unmatched tracks for the next stage
-            curr_unmatched_tracks = TrackList(
-                track_states=curr_unmatched_tracks.track_states,
-                tracks=partition.unmatched_x
-            )
+    #         # Update unmatched tracks for the next stage
+    #         curr_unmatched_tracks = TrackList(
+    #             track_states=curr_unmatched_tracks.track_states,
+    #             tracks=partition.unmatched_x
+    #         )
 
-        return partitions
+    #     return partitions
     
     @abstractmethod
     def update(self, timestep: int, detections: List[Detection]) -> None:

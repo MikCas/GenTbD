@@ -144,6 +144,7 @@ class Track:
         if track_state is not None:
             self._track_state = track_state
         self.increment_lost_count()
+        # self._kalman_filter.predict()
     def reset(self, track_state: TrackState = TrackState.RESERVED, timestep: int = None, detection: Detection = None) -> None:
         """
         Reset the track, including its state, trajectory, lost count, and Kalman filter.

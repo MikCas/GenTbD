@@ -51,14 +51,16 @@ if __name__ == '__main__':
     ##### 4. TRACKER #####
     detection_threshold = 0.3
     creation_threshold = 0.3
-    match_threshold = 0.2
+    match_thresholds = [0.4, 0.2, 0.2]
+    activation_threshold = 10
+    deactivation_threshold = 15
 
-    tracker = SimpleTracker(
+    tracker = SimpleTracker( 
         detection_threshold=detection_threshold,
         creation_threshold=creation_threshold,
-        activation_threshold=0.3, 
-        deactivation_threshold=0.3,
-        match_threshold=match_threshold,
+        activation_threshold=activation_threshold, 
+        deactivation_threshold=deactivation_threshold,
+        match_thresholds=match_thresholds,
         logger=logger
     )
 
