@@ -52,9 +52,12 @@ if __name__ == '__main__':
     detection_threshold = 0.3
     creation_threshold = 0.3
     match_threshold = 0.2
+
     tracker = SimpleTracker(
         detection_threshold=detection_threshold,
         creation_threshold=creation_threshold,
+        activation_threshold=0.3, 
+        deactivation_threshold=0.3,
         match_threshold=match_threshold,
         logger=logger
     )
@@ -62,10 +65,12 @@ if __name__ == '__main__':
     ##### 4. VIDEO SETUP #####
     video_file = 'video1.mp4'
     video_path = os.path.join(os.getcwd(), 'data', video_file)
+    draw_mode = 'state'  # Options: 'state', 'id', 'none'   
 
     vp = SimpleVideoProcessor(video_path=video_path, 
                               detector=detector, 
                               tracker=tracker, 
+                              draw_mode=draw_mode,
                               logger=logger)
     
     vp.process()

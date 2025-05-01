@@ -33,8 +33,7 @@ class Track:
     __slots__ = ['_id', '_track_state', '_lost_count', '_trajectory', '_kalman_filter']
 
     ##### CONSTANTS #####
-    MAX_LOST_COUNT = 10  # Maximum number of frames a track can be lost
-    TRAJECTORY_MAX_SIZE = 10  # Maximum number of detections in the trajectory
+    TRAJECTORY_MAX_SIZE = 50  # Maximum number of detections in the trajectory
 
     ##### PROPERTIES #####
     @property
@@ -57,7 +56,7 @@ class Track:
     def kalman_filter(self) -> KalmanFilter: return self._kalman_filter
 
     ##### SETUP #####
-    def __init__(self, id: int, track_state: TrackState = TrackState.RESERVED):
+    def __init__(self, id: int, track_state: TrackState = TrackState.RESERVED,):
         """
         Args:
             id (int): Unique identifier for the track.
@@ -119,7 +118,33 @@ class Track:
         """
         self._trajectory[timestep] = detection
 
-    def reset(self, track_state: TrackState, timestep: int, detection: Detection) -> None:
+    def match_update(self, timestep: int, detection: Detection, track_state: TrackState = None) -> None:
+        """
+        Update the track with a new detection.
+
+        Args:
+            timestep (int): Current timestep.
+            detection (Detection): Detection data to update the track.
+            track_state (TrackState, optional): New state for the track. Defaults to None.
+        """
+        
+        if track_state is not None:
+            self._track_state = track_state
+
+        self.update_kalman_filter(detection)
+        self.update_trajectory(timestep, detection)
+    def unmatch_update(self, track_state: TrackState = None) -> None:
+        """
+        Update the track when it is unmatched in the current frame.
+
+        Args:
+            track_state (TrackState, optional): New state for the track.
+        """
+        
+        if track_state is not None:
+            self._track_state = track_state
+        self.increment_lost_count()
+    def reset(self, track_state: TrackState = TrackState.RESERVED, timestep: int = None, detection: Detection = None) -> None:
         """
         Reset the track, including its state, trajectory, lost count, and Kalman filter.
         Args:
@@ -129,9 +154,15 @@ class Track:
         """
         self._track_state = track_state
         self.reset_lost_count()
-        self._kalman_filter.initialise(detection.bounding_box)
-        self._trajectory.clear()
-        self.update_trajectory(timestep, detection)
+
+        # If the detection is reset with a detection, then re-initialise the Kalman Filter and update the trajectory
+        if detection:
+            self._kalman_filter.initialise(detection.bounding_box)
+        
+        if timestep is not None and detection is not None:
+            self.update_trajectory(timestep, detection)
+        else:
+            self._trajectory.clear()
 
     ##### TRACKING #####
     def calculate_cost(self, detection: Detection) -> float:
@@ -168,7 +199,6 @@ class Track:
         self._track_state = TrackState.NEW
         self.initialise_kalman_filter(detection)
         self.update_trajectory(timestep, detection)
-
     def activation(self, timestep: int, detection: Detection) -> None:
         """
         NEW -> MATCHED
@@ -181,10 +211,7 @@ class Track:
         """
         if self._track_state != TrackState.NEW:
             raise ValueError("Track must be in NEW state to activate.")
-        self._track_state = TrackState.MATCHED
-        self.update_kalman_filter(detection)
-        self.update_trajectory(timestep, detection)
-
+        self.match_update(timestep, detection, track_state=TrackState.MATCHED)
     def reactivation(self, timestep: int, detection: Detection) -> None:
         """
         RESERVED -> MATCHED
@@ -200,12 +227,7 @@ class Track:
         """
         if self._track_state != TrackState.RESERVED:
             raise ValueError("Track must be in RESERVED state to reactivate.")
-        self._track_state = TrackState.MATCHED
-        self._kalman_filter.initialise(detection.bounding_box)
-        self.update_trajectory(timestep, detection)
-
-        self.reset(TrackState.MATCHED, timestep, detection)
-
+        self.reset(track_state=TrackState.MATCHED, timestep=timestep, detection=detection)
     def deactivation(self) -> None:
         """
         LOST -> RESERVED
@@ -218,47 +240,7 @@ class Track:
             raise ValueError("Track must be in LOST state to be deactivated.")
         self._track_state = TrackState.RESERVED
         self.reset_lost_count()
-
-    def update_matched(self, timestep: int, detection: Detection) -> None:
-        """
-        Update the track when it is matched with a detection.
-
-        Args:
-            timestep (int): Current timestep.
-            detection (Detection): Detection data to update the track.
-        
-        Raises:
-            ValueError: If the track is in the RESERVED state.
-        """
-
-        if self._track_state == TrackState.RESERVED:
-            raise ValueError("Track cannot match in the RESERVED state.")
-        
-        if self._track_state in {TrackState.NEW, TrackState.LOST}:
-            self._track_state = TrackState.MATCHED
-            self.reset_lost_count()
     
-        self.update_kalman_filter(detection)
-        self.update_trajectory(timestep, detection)
-
-    def update_unmatched(self) -> None:
-        """
-        Update the track when it is unmatched in the current frame.
-        """
-        # 
-        if self._track_state == TrackState.NEW:
-            self._track_state = TrackState.RESERVED
-            self.reset_lost_count()
-        elif self._track_state == TrackState.MATCHED:
-            self._track_state = TrackState.LOST
-            self.increment_lost_count()
-        elif self._track_state == TrackState.LOST:
-            if self._lost_count < Track.MAX_LOST_COUNT:
-                self.increment_lost_count()
-            else:
-                self._track_state = TrackState.RESERVED
-                self.reset_lost_count()
-
     ##### DISPLAY #####
     def draw_state(self, image: cv2.Mat, detection: Detection) -> None:
         """
@@ -312,54 +294,3 @@ class Track:
             f"Track(ID={self._id}, STATE={self._track_state}, LOSTCNT={self.lost_count}, TRAJSIZE={self._trajectory}, MOSTRECENTDET={self._trajectory.get_most_recent_detection()})"
         )
     
-
-
-
-    # def activate(self, timestep: int, detection: Detection) -> None:
-    #     """
-    #     NEW -> MATCHED
-    #     The track is activated when it is confirmed to be a consistent object identity, likely to be matched again.
-
-    #     Args:
-    #         timestep (int): Current timestep.
-    #         detection (Detection): Detection used to activate a new track.
-
-    #     Raises:
-    #         ValueError: If the track is not in the NEW state. 
-    #     """
-    #     if self._track_state != TrackState.NEW:
-    #         raise ValueError("Track must be in NEW state to activate.")
-    #     self._track_state = TrackState.MATCHED
-    #     self.update_trajectory(timestep, detection)
-
-
-
-    # def reactivate(self, timestep: int, detection: Detection) -> None:
-    #     """
-    #     RESERVED -> MATCHED
-    #     The track is reactivated if the object identity is successfully matched with a detection after deactivation
-
-    #     Args:
-    #         timestep (int): Current timestep.
-    #         detection (Detection): Detection used to reactivate the track.
-
-    #     Raises:
-    #         ValueError: If the track is not in the RESERVED state.
-    #     """
-    #     if self._track_state != TrackState.RESERVED:
-    #         raise ValueError("Track must be in RESERVED state to be reactivated.")
-    #     self.reset(TrackState.MATCHED, detection)
-    #     self.update_trajectory(timestep, detection)
-    # def deactivate(self) -> None:
-    #     """
-    #     LOST -> RESERVED
-    #     The track is deactivated when it has been LOST for a significant amount of time (e.g., due to occlusion or missed detections), indicating that the object identity is not temporally consistent anymore.
-
-    #     Raises:
-    #         ValueError: If the track is not in the LOST state.
-    #     """
-    #     if self._track_state != TrackState.LOST:
-    #         raise ValueError("Track must be in LOST state to be deactivated.")
-    #     self._track_state = TrackState.RESERVED
-    #     self.reset_lost_count()
-

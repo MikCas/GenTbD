@@ -10,13 +10,19 @@ class SimpleVideoProcessor(Temporal):
     A simple video processor that perform detection and tracking on each frame of a video.
 
     Inherits from the Temporal class.
+
+    Attributes:
+        - detector (Detector): The object detector to use.
+        - tracker (Tracker): The object tracker to use.
+        - draw_mode (str): The mode for drawing the detections and tracks. Options are 'state' or 'id'.
     """
 
     ##### SETUP #####
-    def __init__(self, *args, detector: Detector, tracker: Tracker, **kwargs):
+    def __init__(self, *args, detector: Detector, tracker: Tracker, draw_mode: str = 'state', **kwargs):
         super().__init__(*args, **kwargs)
         self._detector: Detector = detector
         self._tracker: Tracker = tracker
+        self._draw_mode: str = draw_mode
         self._cap: cv2.VideoCapture = self.create_video_capture(self._video_path)
     
     ##### VIDEO PROCESSING #####
@@ -36,7 +42,7 @@ class SimpleVideoProcessor(Temporal):
         # Perform tracking
         self.log(logging.INFO, "|| TRACKING")
         self._tracker.update(self._timestep, detections)
-        self._tracker.draw_tracks(image, mode='state')
+        self._tracker.draw_tracks(image, mode=self._draw_mode)
 
         # Display image
         cv2.imshow('Processed Frame', image)

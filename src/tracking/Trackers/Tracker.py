@@ -5,7 +5,7 @@ from Detecting.Detections.Detection import Detection
 from abc import ABC, abstractmethod
 from scipy.optimize import linear_sum_assignment
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import logging
 import cv2
 
@@ -115,6 +115,7 @@ class Tracker(ABC):
         self._match_threshold: float = match_threshold
         self._logger: logging.Logger = logger 
         self._id_count: int = 0
+        
         self._new_tracks: TrackList = TrackList(TrackState.NEW)
         self._matched_tracks: TrackList = TrackList(TrackState.MATCHED)
         self._lost_tracks: TrackList = TrackList(TrackState.LOST)
@@ -230,50 +231,158 @@ class Tracker(ABC):
         # Perform linear assignment
         partition = self.linear_assignment(timestep, track_list.tracks, detections)
         return partition
-
-    ##### LIFECYCLE #####
-
-    #     \begin{itemize}
-#     \item \textbf{Creation}: The track is created when it is first associated with a detection, marking the beginning of its identity.
-#     \item \textbf{Activation}: A track transitions from \textit{NEW} to \textit{MATCHED} when it is confirmed to be a consistent object identity, likely to be matched again.
-#     \item \textbf{Deactivation}: If a track fails to reappear after being temporarily lost (e.g., due to occlusion or missed detections), it enters the \textit{RESERVED} state, ending its active tracking.
-#     \item \textbf{Reactivation}: A track in the \textit{RESERVED} state can be reactivated if it reappears and is successfully matched with a detection, moving back to the \textit{MATCHED} state.
-# \end{itemize}
-
-    # @abstractmethod
-    # def create(self, detection: Detection) -> Track:
-
-    #     pass
     
     # @abstractmethod
-    # def activate(self, track: Track) -> None:
+    # def cascaded_assignment(self, timestep: int, track_list: TrackList, detections: List[Detection]) -> Partition:
     #     """
-    #     Activate a track, marking it as matched.
+    #     Cascaded assignment procedure to match tracks with detections.
     #     Args:
-    #         track (Track): The track to activate.
+    #         timestep (int): The current timestep.
+    #         track_list (TrackList): The list of tracks to match.
+    #         detections (list[Detection]): The list of detections to track.
+    #     Returns:
+    #         Partition: A Partition object containing matched pairs and unmatched detections.
     #     """
-    #     # track.activate()
-    #     # self._matched_tracks.add(track)
-    #     # self._new_tracks.remove(track)
-    #     # self.log(logging.INFO, "TRACK {} ACTIVATED".format(track.id))
     #     pass
 
-    # @abstractmethod
-    # def reactivate(self, track: Track) -> None:
-    #     """
-    #     Deactivate a track, marking it as reserved.
-    #     Args:
-    #         track (Track): The track to deactivate.
-    #     """
-    #     # track.state = TrackState.RESERVED
-    #     # self._reserved_tracks.add(track)
-    #     # self._matched_tracks.remove(track)
-    #     # self.log(logging.INFO, "TRACK {} DEACTIVATED".format(track.id))
+        ##### LIFECYCLE #####
+        @abstractmethod
+        def create(self, timestep: int, detection: Detection) -> Optional[Track]:
+            """
+            Abstract method to create a new track identity given a detection.
 
-    # @abstractmethod
-    # def reactivate(self, track: Track) -> None:
-    #     pass
+            Args:
+                timestep (int): The current timestep.
+                detection (Detection): The detection initializing the track identity.
 
+            Returns:
+                Optional[Track]: The created track or None if the creation condition is not passed.
+            """
+            pass
+
+        @abstractmethod
+        def activate(self, timestep: int, track: Track, detection: Detection) -> None:
+            """
+            Abstract method to activate a track identity given a detection.
+
+            Args:
+                timestep (int): The current timestep.
+                track (Track): The track to be activated.
+                detection (Detection): The detection activating the track identity.
+            """
+            pass
+
+        @abstractmethod
+        def deactivate(self, track: Track) -> None:
+            """
+            Abstract method to deactivate a track.
+
+            Args:
+                track (Track): The track to be deactivated.
+            """
+            pass
+
+        ##### TRACK MANAGEMENT #####
+        @abstractmethod
+        def process_matches(self, timestep: int, matches: List) -> None:
+            """
+            Abstract method to process the matches between tracks and detections.
+
+            Args:
+                timestep (int): The current timestep.
+                matches (List): List of matched track-detection pairs.
+            """
+            pass
+
+        @abstractmethod
+        def process_unmatched_tracks(self, tracks: List[Track]) -> None:
+            """
+            Abstract method to process unmatched tracks and update their state.
+
+            Args:
+                tracks (List[Track]): List of unmatched tracks to process.
+            """
+            pass
+
+        @abstractmethod
+        def process_unmatched_detections(self, timestep: int, detections: List[Detection]) -> None:
+            """
+            Abstract method to process unmatched detections and update their state.
+
+            Args:
+                timestep (int): The current timestep.
+                detections (List[Detection]): List of unmatched detections to process.
+            """
+            pass
+
+        @abstractmethod
+        def track_management(self, timestep: int, partition: Partition) -> None:
+            """
+            Abstract method to manage the state of tracks based on the partition of detections.
+
+            Args:
+                timestep (int): The current timestep.
+                partition (Partition): The partition of detections to manage.
+            """
+            pass
+    
+    def cascaded_assignment(
+        self, 
+        tracks: TrackList, 
+        detections_list: List[List[Detection]], 
+        match_thresholds: List[float]
+    ) -> List[Partition]:
+        """
+        Perform cascaded assignment for iterative tracking.
+
+        This procedure handles the assignment of detections to tracks in multiple stages.
+        At each stage, unmatched tracks are matched with a subset of detections using a specific match threshold.
+
+        Args:
+            tracks (TrackList): List of tracks to be assigned.
+            detections_list (List[List[Detection]]): List of detection subsets for each stage.
+            match_thresholds (List[float]): List of match thresholds for each stage.
+
+        Returns:
+            List[Partition]: A list of Partition objects, one for each stage of the assignment.
+                            The last Partition contains the unmatched tracks and detections.
+        """
+        self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
+
+        # Initialize results
+        partitions = []  # List to store partitions for each stage
+        curr_unmatched_tracks = tracks  # Tracks remaining unmatched for further assignment
+
+        # Iterate through each stage of assignment
+        for detections, match_threshold in zip(detections_list, match_thresholds):
+            # Perform linear assignment for the current stage
+            partition = self.linear_assignment(
+                timestep=None,  # Assuming timestep is not needed here
+                xs=curr_unmatched_tracks,
+                ys=detections
+            )
+
+            # Perform assignment between tracks and detections given the match threshold
+            self.assignment(
+                timestep=None,  # Assuming timestep is not needed here
+                track_list=curr_unmatched_tracks,
+                detections=detections
+            )
+
+            # Update the partition with filtered matches
+            partition._matched = filtered_matches
+
+            # Add the partition to the results
+            partitions.append(partition)
+
+            # Update unmatched tracks for the next stage
+            curr_unmatched_tracks = TrackList(
+                track_states=curr_unmatched_tracks.track_states,
+                tracks=partition.unmatched_x
+            )
+
+        return partitions
+    
     @abstractmethod
     def update(self, timestep: int, detections: List[Detection]) -> None:
         """
@@ -283,7 +392,90 @@ class Tracker(ABC):
             detections (list[Detection]): The list of detections to update the tracker with.
         """
         pass
- 
+        
+    ##### LIFECYCLE #####
+    @abstractmethod
+    def create(self, timestep: int, detection: Detection) -> Optional[Track]:
+        """
+        Create a new track identity given a detection.
+        Args:
+            timestep (int): The current timestep.
+            detection (Detection): The detection initializing the track identity.
+        Returns:
+            Optional[Track]: The created track or None if the creation condition is not passed.
+        """
+        pass
+
+    @abstractmethod
+    def activate(self, timestep: int, track: Track, detection: Detection) -> None:
+        """
+        Activate a track identity given a detection.
+        Args:
+            timestep (int): The current timestep.
+            track (Track): The track to be activated.
+            detection (Detection): The detection activating the track identity.
+        """
+        pass
+
+    @abstractmethod
+    def deactivate(self, track: Track) -> None:
+        """
+        Deactivate a track.
+        Args:
+            track (Track): The track to be deactivated.
+        """
+        pass
+
+    ##### TRACK MANAGEMENT #####
+    @abstractmethod
+    def process_matches(self, timestep: int, matches: List) -> None:
+        """
+        Process the matches between tracks and detections.
+        Args:
+            timestep (int): The current timestep.
+            matches (List): List of matched track-detection pairs.
+        """
+        pass
+
+    @abstractmethod
+    def process_unmatched_tracks(self, tracks: List[Track]) -> None:
+        """
+        Process unmatched tracks and update their state.
+        Args:
+            tracks (List[Track]): List of unmatched tracks to process.
+        """
+        pass
+
+    @abstractmethod
+    def process_unmatched_detections(self, timestep: int, detections: List[Detection]) -> None:
+        """
+        Process unmatched detections and update their state.
+        Args:
+            timestep (int): The current timestep.
+            detections (List[Detection]): List of unmatched detections to process.
+        """
+        pass
+
+    def track_management(self, timestep: int, partition: Partition) -> None:
+        """
+        Manages the state of tracks based on the partition of detections.
+        This includes updating matched tracks, handling unmatched tracks, and activating new tracks.
+
+        Args:
+            timestep (int): The current timestep.
+            partition (Partition): The partition of detections to manage.
+        """
+        self.log(logging.INFO, "\t||TRACK MANAGEMENT")
+        
+        # Reset NEW, MATCHED, and LOST tracks
+        self._new_tracks.reset()
+        self._matched_tracks.reset()
+        self._lost_tracks.reset()
+
+        self.process_matches(timestep, partition.matched)
+        self.process_unmatched_tracks(partition.unmatched_x)
+        self.process_unmatched_detections(timestep, partition.unmatched_y)
+    
     ##### DISPLAY #####
     def log(self, level: int, message: str) -> None:
         """

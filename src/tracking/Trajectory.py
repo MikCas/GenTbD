@@ -26,6 +26,16 @@ class Trajectory(OrderedDict):
             int: The maximum number of detections the trajectory can store.
         """
         return self._max_size
+    
+    @property
+    def size(self) -> int:
+        """
+        Get the current size of the trajectory.
+
+        Returns:
+            int: The number of detections currently stored in the trajectory.
+        """
+        return len(self)
 
     ##### SETUP #####
     def __init__(self, *args, max_size: int = 0, **kwargs):
