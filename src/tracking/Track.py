@@ -1,5 +1,5 @@
 from Properties.BoundingBox import BoundingBox
-from Detection.Detection import Detection
+from Detecting.Detections.Detection import Detection
 from Tracking.Trajectory import Trajectory
 from Tracking.KalmanFilter import KalmanFilter
 from enum import Enum

@@ -1,5 +1,5 @@
 from Temporal.Temporal import Temporal
-from Detection.Detectors.Detector import Detector
+from Detecting.Detectors.Detector import Detector
 from Tracking.Trackers.Tracker import Tracker
 
 import logging
@@ -31,7 +31,7 @@ class SimpleVideoProcessor(Temporal):
         # Perform detection 
         self.log(logging.INFO, "|| DETECTION")  
         detections = self._detector.detect(image)
-        self._detector.display_detections(detections, image)
+        self._detector.draw_detections(detections, image)
 
         # Perform tracking
         self.log(logging.INFO, "|| TRACKING")

@@ -1,6 +1,6 @@
 from Tracking.Track import Track, TrackState
 from Tracking.Partition import Partition
-from Detection.Detection import Detection
+from Detecting.Detections.Detection import Detection
 
 from abc import ABC, abstractmethod
 from scipy.optimize import linear_sum_assignment

@@ -1,4 +1,4 @@
-from Detection.Detection import Detection
+from Detecting.Detections.Detection import Detection
 from Tracking.Track import Track, TrackState
 from Tracking.Partition import Partition
 from Tracking.Trackers.Tracker import TrackList, Tracker

@@ -1,4 +1,4 @@
-from Detection.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
+from Detecting.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
 from Tracking.Trackers.SimpleTracker import SimpleTracker
 from Temporal.VideoProcessor import SimpleVideoProcessor
 

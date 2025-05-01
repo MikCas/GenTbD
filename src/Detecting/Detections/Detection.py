@@ -1,56 +1,37 @@
 from Properties.BoundingBox import BoundingBox
+from abc import ABC, abstractmethod
 from typing import Optional
 import cv2
 import random
 
-class Detection:
+class Detection(ABC):
     """
-    A class representing a detected object in an image or video frame.
-
+    Abstract class for a detection.
+    Provides a template for derived classes to implement specific detection types, bsaed on different
+    detection algorithms or models
+    
     Attributes:
         Consists of Identity-Preserving Properties (IPP), which are properties that remain constant across frames for the same identity:
-            - bounding_box (BoundingBox): The bounding box of the detected object.
         and Non-Identity-Preserving Properties (NIPP), which are properties that do not depend on time:
-            - class_id (int): The ID of the detected class.
-            - confidence_score (float): The confidence score of the detection.
     """
-
-    ### ATTRIBUTES
-    __slots__ = ('_class_id', '_bounding_box', '_confidence_score')
-    @property
-    def bounding_box(self): return self._bounding_box
-    @property
-    def class_id(self): return self._class_id
-    @property
-    def confidence_score(self): return self._confidence_score
     
-    ### SETUP 
-    def __init__(self, class_id: int = 0, bounding_box: BoundingBox = BoundingBox(), confidence_score: float = 0) -> None:
-        self._bounding_box = bounding_box
-        self._class_id = class_id
-        self._confidence_score = confidence_score
-    
-    ### FUNCTIONS
-    def calculate_similarity(self, other_bounding_box: BoundingBox) -> float:
+    ##### FUNCTIONS #####
+    @abstractmethod
+    def calculate_similarity(self, other: 'Detection') -> float:
         """
-        Calculate the similarity between two bounding boxes using the similarity methods of the IPPs
-        Note: you can combine similarity metrics any way you want
-
+        Calculate similarity between this detection and another detection.
         Args:
             other_bounding_box (BoundingBox): The bounding box to compare with.
-        Returns:
-            float: The similarity score between the two bounding boxes.
         """
-        similarity_iou = self._bounding_box.similarity(other_bounding_box)
-        return similarity_iou
+        pass
 
-    ### REPRESENTATION
+    ##### DISPLAY #####
     @staticmethod
     def generate_random_colour(seed: Optional[int] = 0) -> tuple:
         """
         Generate a random colour given a seed 
         Args:
-            seed (int, optional): Seed fro random number generation
+            seed (int, optional): Seed for random number generation
         Returns:
             tuple: A tuple representing the RGB colour.
         """
@@ -95,13 +76,14 @@ class Detection:
             colour (tuple): The colour of the label text.
         """
         cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colour, 2)
-        
-    def display(self, 
-                image: cv2.Mat, 
-                label: str = "", 
-                colour:Optional[tuple] = None, 
-                seed:Optional[int] = None) -> None:
-    
+
+    ##### ABSTRACT METHODS #####
+    @abstractmethod
+    def draw(self, 
+             image: cv2.Mat, 
+             label: str = "", 
+             colour: Optional[tuple] = None, 
+             seed: Optional[int] = None) -> None:
         """
         Display the detection on the given frame.
         Args:
@@ -110,21 +92,8 @@ class Detection:
             colour (tuple, optional): The colour of the bounding box and label. Defaults to None.
             seed (int, optional): Seed for random colour generation. Defaults to None.
         """
+        pass
 
-        # Generate random colour if not provided
-        if colour is None:
-            colour = self.generate_random_colour(seed)
-
-        # Extract bounding box coordinates
-        x_min, y_min, x_max, y_max = map(int, self._bounding_box.xyxy())
-
-        # Add confidence score to the label
-        label_with_score = f"{label} - {self._confidence_score:.2f}"
-        
-        # Draw the bounding box and label
-        self.draw_bounding_box(image, x_min, y_min, x_max, y_max, colour)
-        self.draw_label(image, label_with_score, x_min, y_min, colour)
-
-    def __str__(self, format='corners'):
-        return (f"DET({self._bounding_box.__str__(format=format)}, "
-                f"SCORE={self._confidence_score:.2f})")
+    @abstractmethod
+    def __str__(self, format: str = 'corners') -> str:
+        pass

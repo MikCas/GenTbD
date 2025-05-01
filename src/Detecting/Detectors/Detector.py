@@ -1,4 +1,4 @@
-from Detection.Detection import Detection
+from Detecting.Detections.Detection import Detection
 
 from abc import ABC, abstractmethod
 import cv2
@@ -8,7 +8,7 @@ import logging
 
 class Detector(ABC): 
     """
-    Abstract base class for a detector.
+    Abstract base class for a detector. Detectors can be object detectors, face detectors, keypoint estimators, re-id systems etc..
 
     Attributes:
         model_path (str): Path to the model file.
@@ -26,6 +26,7 @@ class Detector(ABC):
         self._logger = logger
 
     ##### DETECTION #####
+    #TODO: REMOVE THE COMPUTE_IOU METHOD AND REPLACE WITH THE COMPUTE_IOU IN BOUNDINGBOX CLASS
     @staticmethod
     def compute_iou(box: np.ndarray, boxes: np.ndarray) -> np.ndarray:
         """
@@ -93,7 +94,7 @@ class Detector(ABC):
         return keep_boxes
  
     @abstractmethod
-    def create_detections(self, data: tuple) -> list[Detection]:
+    def create_detections(self, data: tuple) -> list:
         """
         Create Detection objects from the model output.
 
@@ -101,7 +102,7 @@ class Detector(ABC):
             data (tuple): The model output.
 
         Returns:
-            list[Detection]: List of Detection objects.
+            list: List of Detection objects.
         """
         pass
 
@@ -142,6 +143,7 @@ class Detector(ABC):
         Returns:
             Any: The postprocessed output.
         """
+        
         pass
 
     def detect(self, image:cv2.Mat) -> list[Detection]:
@@ -172,15 +174,28 @@ class Detector(ABC):
         if self._logger:
             self._logger.log(level, message)
 
-    def display_detections(self, detections: list[Detection], image: cv2.Mat) -> None:
+    def draw_detections(self, detections: list[Detection], image: cv2.Mat) -> None:
         """
-        Display detections on the given image.
+        Draw detections on the given image.
 
         Args:
             detections (list[Detection]): List of detections to display.
             image (cv2.Mat): The image on which to display the detections.
         """
-        for detection in detections:
-            detection.display(image, colour=(255, 255, 255))
+
+        tab = "\n\t\t\t\t\t"
+        if not detections:
             if self._logger:
-                self._logger.info(f"DETECTED: {detection}")
+                self.log(logging.INFO, "\t// DETECTIONS: None")
+            return
+
+        detections_log = []
+
+        for detection in detections:
+            detection.draw(image, colour=(255, 255, 255))
+            if self._logger:
+                detections_log.append(str(detection))
+
+        if self._logger:
+            log_output = tab.join(detections_log)
+            self.log(logging.DEBUG, f"\t// DETECTIONS:{tab}{log_output}")

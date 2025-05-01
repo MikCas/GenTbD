@@ -1,4 +1,4 @@
-from Detection.Detection import Detection
+from Detecting.Detections.Detection import Detection
 from collections import OrderedDict
 from typing import Optional, Any
 

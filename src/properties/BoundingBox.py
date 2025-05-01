@@ -13,7 +13,7 @@ class BoundingBox(Property):
     Note that the default representation is Corners (xyxy)
     """
 
-    ##### ATTRIBUTES #####
+    ##### PROPERTIES #####
     __slots__ = ['_x_min', '_y_min', '_x_max', '_y_max']
 
     @property
@@ -200,10 +200,10 @@ class BoundingBox(Property):
             ValueError: If an invalid format is specified.
         """
         if format == 'corners':
-            return f"BB(xyxy=[{self._x_min:.2f}, {self._y_min:.2f}, {self._x_max:.2f}, {self._y_max:.2f}])"
+            return f"xyxy[{self._x_min:.2f}, {self._y_min:.2f}, {self._x_max:.2f}, {self._y_max:.2f}]"
         elif format == 'top_left':
-            return f"BB(xywh=[{self._x_min:.2f}, {self._y_min:.2f}, {self.width:.2f}, {self.height:.2f}])"
+            return f"xywh=[{self._x_min:.2f}, {self._y_min:.2f}, {self.width:.2f}, {self.height:.2f}]"
         elif format == 'center':
-            return f"BB(cxcywh=[{self.center[0]:.2f}, {self.center[1]:.2f}, {self.width:.2f}, {self.height:.2f}])"
+            return f"cxcywh[{self.center[0]:.2f}, {self.center[1]:.2f}, {self.width:.2f}, {self.height:.2f}]"
         else:
             raise ValueError(f"Invalid format '{format}'. Use 'corners', 'top_left', or 'center'.")

@@ -20,7 +20,7 @@ class Temporal(ABC):
 
     __slots__ = ("_video_path", "_timestep", "_continuous_mode", "_cap", "_logger")
 
-    ##### ATTRIBUTES #####
+    ##### PROPERTIES #####
     @property
     def timestep(self) -> int:
         return self._timestep

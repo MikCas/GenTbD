@@ -1,6 +1,6 @@
 from Properties.BoundingBox import BoundingBox
-from Detection.Detection import Detection
-from Detection.Detectors.Detector import Detector 
+from Detecting.Detections.ObjectDetection import objectDetection as Detection
+from Detecting.Detectors.Detector import Detector 
 
 from abc import ABC
 import cv2
@@ -32,10 +32,8 @@ class YOLOv7ONNX(Detector):
     def create_onnx_model(self, model_path: str) -> None:
         """
         Set up the ONNX model.
-
         Args:
             model_path (str): Path to the ONNX model file.
-
         Returns:
             ort.InferenceSession: Inference session for the ONNX model.
         """
@@ -65,15 +63,14 @@ class YOLOv7ONNX(Detector):
         super().__init__(model_path, confidence_threshold, logger)
         self._iou_threshold = iou_threshold
         self._classes = classes
-
         self.create_onnx_model(model_path)
-
         self.log(logging.INFO, f"|| DETECTOR INITIALISED\n"
                     f"\t\t\t\t    - MODEL: {model_path}\n"
                     f"\t\t\t\t    - CONFIDENCE: {confidence_threshold}\n"
                     f"\t\t\t\t    - IOU: {iou_threshold}")
 
     ##### DETECTION #####
+    #TODO: CHANGE THE EXTRACT_BOXES METHOD TO USE THE BOUNDINGBOX CLASS
     def extract_boxes(self, boxes_xywh: np.ndarray) -> np.ndarray:
         """
         Convert bounding boxes from center format (cx, cy, w, h) to corner format (x1, y1, x2, y2),
@@ -132,7 +129,6 @@ class YOLOv7ONNX(Detector):
             )
             for box, class_id, confidence_score in zip(boxes, class_ids, scores)
         ]
-
     def preprocess(self, image: cv2.Mat) -> np.ndarray:
         """
         Preprocess the input image for the model.
@@ -148,6 +144,7 @@ class YOLOv7ONNX(Detector):
         Returns:
             np.ndarray: Preprocessed image blob.
         """
+        self.log(logging.INFO, "\t|| PREPROCESSING")
 
         # input dimensions of the model
         input_height, input_width = self._input_shape[2:] # Model input shape (H, W)
@@ -192,6 +189,7 @@ class YOLOv7ONNX(Detector):
         Returns:
             list: Model outputs in the format [[batch, num_anchors, (cx, cy, w, h, conf, class_id)]].
         """
+        self.log(logging.INFO, "\t|| INFERENCE")
         # Start timing for inference
         start_time = time.perf_counter()
 
@@ -224,6 +222,9 @@ class YOLOv7ONNX(Detector):
                 - np.ndarray: Class IDs corresponding to the filtered bounding boxes.
                 - np.ndarray: Confidence scores for the filtered bounding boxes.
         """
+
+        self.log(logging.INFO, "\t|| POSTPROCESS")
+        
         # Extract predictions from model outputs
         predictions = outputs[0][0]  # Shape: [num_anchors, 5 + num_classes]
 
