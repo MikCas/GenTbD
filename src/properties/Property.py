@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class Property:
     """
-    Abstract class for properties.
+    Abstract class for identity-preserving properties.
     """
     @abstractmethod
     def similarity(self, other) -> float:
