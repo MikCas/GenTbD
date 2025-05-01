@@ -90,8 +90,8 @@ class SimpleTracker(Tracker):
         
         # Create a new track with the detection
         self.increment_id_count()
-        track = Track(self._id_count)
-        track.creation(timestep, detection)
+        track = Track(self._id_count) # Initialise a RESERVED track with given ID
+        track.creation(timestep, detection) # Track creation 
         self._new_tracks.add(track)
         self.log(logging.DEBUG, "\t//CREATED TRACK {}".format(track.id))
 

@@ -103,8 +103,6 @@ class Tracker(ABC):
         reserved_tracks (TrackList): List of removed tracks.
     """
 
-    ##### PROPERTIES #####
-    
     ##### SETUP ##### 
     def __init__(self, 
                  match_threshold: float = 0.05,
@@ -275,7 +273,6 @@ class Tracker(ABC):
     # @abstractmethod
     # def reactivate(self, track: Track) -> None:
     #     pass
-
 
     @abstractmethod
     def update(self, timestep: int, detections: List[Detection]) -> None:
