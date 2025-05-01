@@ -203,7 +203,7 @@ class SimpleTracker(Tracker):
     ##### ASSIGNMENT #####
     def bytetrack(self, timestep: int, detections: List[Detection]) -> Partition: 
         """
-        Perform cascaded assignment for iterative tracking.
+        Bytetrack tracking algorithm
 
         This procedure handles the assignment of detections to tracks in multiple stages:
         1. High-confidence detections are matched with matched and lost tracks.
@@ -251,46 +251,51 @@ class SimpleTracker(Tracker):
         )
 
         return final_partition
+    
+    def bytetrack_cascade(self, timestep: int, detections: List[Detection]) -> Partition:
+        """
+        Equivalent Bytetrack tracking algorithm with a cascaded assignment approach.
 
+        This procedure handles the assignment of detections to tracks in multiple stages:
+        1. High-confidence detections are matched with matched and lost tracks.
+        2. Remaining unmatched tracks are matched with low-confidence detections.
+        3. New tracks are matched with remaining unmatched high-confidence detections.
+ 
+        Args:
+            timestep (int): The current timestep.
+            detections (List[Detection]): List of detections to assign to tracks.
 
-    # def bytetrack_assignment(self, timestep: int, detections: List[Detection]) -> List[Partition]:
-    #     """
-    #     Perform cascaded assignment for iterative tracking using the cascaded_assignment algorithm.
+        Returns:
+            Partition: A Partition object containing matched tracks, unmatched tracks, and unmatched detections.
+        """
+        self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
 
-    #     This procedure handles the assignment of detections to tracks in multiple stages:
-    #     1. High-confidence detections are matched with matched and lost tracks.
-    #     2. Remaining unmatched tracks are matched with low-confidence detections.
-    #     3. New tracks are matched with remaining unmatched high-confidence detections.
+        # Step 1: Partition detections into high and low confidence
+        detections_high, detections_low = self.partition_detections(detections)
 
-    #     Args:
-    #         timestep (int): The current timestep.
-    #         detections (List[Detection]): List of detections to assign to tracks.
+        # Step 2: Combine matched and lost tracks
+        matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
 
-    #     Returns:
-    #         List[Partition]: A list of Partition objects, one for each stage of the assignment.
-    #                         The last Partition contains the unmatched tracks and detections.
-    #     """
-    #     self.log(logging.INFO, "\t||BYTE TRACK ASSIGNMENT")
+        # Step 3: Cascaded assignment of high-confidence detections to matched and lost tracks
+        partition1 = self.cascaded_assignment(timestep, matched_lost_tracks, [detections_high, detections_low], self._match_thresholds[:2])
 
-    #     # Step 1: Partition detections into high and low confidence
-    #     detections_high, detections_low = self.partition_detections(detections)
+        # Step 4: Assign unmatched high-confidence detections to new tracks
+        partition2 = self.assignment(timestep, self._new_tracks, partition1.unmatched_y, self._match_thresholds[2])
 
-    #     # Step 2: Prepare the inputs for cascaded assignment
-    #     # Combine matched and lost tracks
-    #     matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
+        # Step 6: Combine results from all partitions
+        matched_tracks_detections = partition1.matched + partition2.matched 
+        unmatched_tracks = partition1.unmatched_x + partition2.unmatched_x
+        unmatched_detections = partition2.unmatched_y
 
-    #     # Define the detection subsets and match thresholds for each stage
-    #     detections_list = [detections_high, detections_low, detections_high]
-    #     match_thresholds = [self._match_threshold, self._match_threshold, self._match_threshold]
+        # Create final partition
+        final_partition = Partition(
+            matched=matched_tracks_detections, 
+            unmatched_x=unmatched_tracks, 
+            unmatched_y=unmatched_detections
+        )
 
-    #     # Define the track lists for each stage
-    #     track_lists = [matched_lost_tracks, matched_lost_tracks, self._new_tracks]
+        return final_partition
 
-    #     # Step 3: Perform cascaded assignment
-    #     partitions = self.cascaded_assignment(track_lists, detections_list, match_thresholds)
-
-    #     # Step 4: Return the list of partitions
-    #     return partitions
 
     def update(self, timestep: int, detections: List[Detection]) -> None:
         """

@@ -312,58 +312,62 @@ class Tracker(ABC):
                 partition (Partition): The partition of detections to manage.
             """
             pass
-    
-    # def cascaded_assignment(
-    #     self, 
-    #     tracks: TrackList, 
-    #     detections_list: List[List[Detection]], 
-    #     match_thresholds: List[float]
-    # ) -> List[Partition]:
-    #     """
-    #     Perform cascaded assignment for iterative tracking.
+        
+    def cascaded_assignment(
+        self, 
+        timestep: int,
+        tracks: TrackList, 
+        detections_list: List[List[Detection]], 
+        match_thresholds: List[float]
+    ) -> List[Partition]:
+        """
+        Perform cascaded assignment to perform an iterative assignment of unmatched tracks to a set of detections in multiple cascading stages 
+        At each stage, unmatched tracks are matched with a subset of detections using a specific match threshold.
 
-    #     This procedure handles the assignment of detections to tracks in multiple stages.
-    #     At each stage, unmatched tracks are matched with a subset of detections using a specific match threshold.
+        Args:
+            timestep (int): The current timestep.
+            tracks (TrackList): List of tracks to be assigned.
+            detections_list (List[List[Detection]]): List of detection subsets for each stage.
+            match_thresholds (List[float]): List of match thresholds for each stage.
 
-    #     Args:
-    #         tracks (TrackList): List of tracks to be assigned.
-    #         detections_list (List[List[Detection]]): List of detection subsets for each stage.
-    #         match_thresholds (List[float]): List of match thresholds for each stage.
+        Returns:
+            Partition: A list of Partition objects, one for each stage of the assignment.
+                            The last Partition contains the unmatched tracks and detections.
+        """
+        self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
 
-    #     Returns:
-    #         List[Partition]: A list of Partition objects, one for each stage of the assignment.
-    #                         The last Partition contains the unmatched tracks and detections.
-    #     """
-    #     self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
+        # Cascade results
+        matched = []  # List to store matched tracks and detections at each stage
+        unmatched_detections = []  # List to store unmatched detections at each stage
+        curr_unmatched_tracks = tracks  # Tracks remaining unmatched for further assignment
 
-    #     # Initialize results
-    #     partitions = []  # List to store partitions for each stage
-    #     curr_unmatched_tracks = tracks  # Tracks remaining unmatched for further assignment
+        # Iterate through each stage of assignment
+        for detections, match_threshold in zip(detections_list, match_thresholds):
 
-    #     # Iterate through each stage of assignment
-    #     for detections, match_threshold in zip(detections_list, match_thresholds):
-    #         # Perform linear assignment for the current stage
-    #         partition = self.linear_assignment(
-    #             timestep=None,  # Assuming timestep is not needed here
-    #             xs=curr_unmatched_tracks,
-    #             ys=detections
-    #         )
+            # Perform linear assignment for the current stage
+            curr_partition = self.assignment(
+                timestep=timestep,  
+                track_list=curr_unmatched_tracks,
+                detections=detections,
+                match_threshold=match_threshold
+            )
 
-    #         # Perform assignment between tracks and detections given the 
+            curr_unmatched_tracks = TrackList(
+                track_states=curr_unmatched_tracks.track_states, 
+                tracks=curr_partition.unmatched_x
+            )
 
-    #         # Update the partition with filtered matches
-    #         partition._matched = filtered_matches
+            # Add the partition to the results
+            matched.extend(curr_partition.matched)
+            unmatched_detections.extend(curr_partition.unmatched_y)
 
-    #         # Add the partition to the results
-    #         partitions.append(partition)
+        partition = Partition(
+            matched=matched,
+            unmatched_x=curr_unmatched_tracks.tracks,
+            unmatched_y=unmatched_detections
+        )
 
-    #         # Update unmatched tracks for the next stage
-    #         curr_unmatched_tracks = TrackList(
-    #             track_states=curr_unmatched_tracks.track_states,
-    #             tracks=partition.unmatched_x
-    #         )
-
-    #     return partitions
+        return partition
     
     @abstractmethod
     def update(self, timestep: int, detections: List[Detection]) -> None:
