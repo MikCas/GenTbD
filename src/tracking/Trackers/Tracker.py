@@ -1,6 +1,5 @@
 from Tracking.Track import Track, TrackState
 from Tracking.Partition import Partition
-from Tracking.Assignment import linear_assignment
 from Detection.Detection import Detection
 
 from abc import ABC, abstractmethod
@@ -120,8 +119,6 @@ class Tracker(ABC):
         self._matched_tracks: TrackList = TrackList(TrackState.MATCHED)
         self._lost_tracks: TrackList = TrackList(TrackState.LOST)
         self._reserved_tracks: TrackList = TrackList(TrackState.RESERVED)
-
-        self.log(logging.INFO, "TRACKER INITIALISED - MATCH THRESHOLD: {}".format(self._match_threshold))
     
     ##### UTILITIES #####
     def reset(self) -> None:

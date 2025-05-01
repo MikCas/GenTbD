@@ -7,51 +7,53 @@ import cv2
 
 class SimpleVideoProcessor(Temporal):
     """
-    A simple video processor based on the AbstractTemporalSystem class.
+    A simple video processor that perform detection and tracking on each frame of a video.
+
+    Inherits from the Temporal class.
     """
 
-    ### SETUP
+    ##### SETUP #####
     def __init__(self, *args, detector: Detector, tracker: Tracker, **kwargs):
         super().__init__(*args, **kwargs)
         self._detector: Detector = detector
         self._tracker: Tracker = tracker
         self._cap: cv2.VideoCapture = self.create_video_capture(self._video_path)
     
-    ### FUNCTIONS
+    ##### VIDEO PROCESSING #####
     def process_image(self, image: cv2.Mat) -> None:
         """
-        Processes an image.
+        Performs detection followed by tracking on the given image. The image with detections/tracks is then displayed. 
 
         Args:
             image (cv2.Mat): The image to process.
         """
-
-        print("----------------------------------------------------------------------------------------------------")
-        print("----------------------------------------------------------------------------------------------------")
-        self.log(logging.INFO, f"TIMESTEP: {self._timestep}")
         
         # Perform detection 
-        self.log(logging.INFO, "DETECTION----------------------------------------------------------")  
+        self.log(logging.INFO, "|| DETECTION")  
         detections = self._detector.detect(image)
-        # self._detector.display_detections(detections, image)
+        self._detector.display_detections(detections, image)
 
         # Perform tracking
-        self.log(logging.INFO, "TRACKING-----------------------------------------------------------")
-        self._tracker.update(self._timestep, detections)
-        self._tracker.display_tracks(image, mode='state')
+        self.log(logging.INFO, "|| TRACKING")
+        # self._tracker.update(self._timestep, detections)
+        # self._tracker.display_tracks(image, mode='state')
 
         # Display image
         cv2.imshow('Processed Frame', image)
 
     def process(self) -> None:
         """
-        Processes the video file frame-by-frame, at each frame applying the process_frame method. 
+        Processes the video file frame-by-frame, at each frame applying the 'process_image' method, while also handling user input events.
         """
+        if self._logger: print()
+        self.log(logging.INFO, f"|| BEGIN VIDEO PROCESSING")
+
+        # Iterate through thte vide, reading a frame at each iteration
         while True:
             image = self.continue_video()
             if image is None: break        # End of video or error reading frame
 
-            self.update_timestep()
+            # Perform detection and tracking on the image 
             self.process_image(image)
 
             # Handle key events
@@ -60,6 +62,11 @@ class SimpleVideoProcessor(Temporal):
             else:
                 key = cv2.waitKey(0) & 0xFF
 
-            self.save_event(key, image)     # Press 's'
-            self.toggle_event(key)          # Press 'c' 
-            if self.quit_event(key): break  # Press 'q'     
+            video_name = self._video_path.split('/')[-1]      # Extract video file name
+            self.save_event(key, image, video_name)           # Press 's'
+            self.toggle_event(key)                            # Press 'c' 
+            if self.quit_event(key): break                    # Press 'q'   
+        
+            if self._logger: print() # Skip line for better readability
+
+        self.terminate()

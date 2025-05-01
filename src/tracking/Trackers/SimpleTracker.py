@@ -1,7 +1,6 @@
 from Detection.Detection import Detection
 from Tracking.Track import Track, TrackState
 from Tracking.Partition import Partition
-from Tracking.Assignment import linear_assignment
 from Tracking.Trackers.Tracker import TrackList, Tracker
 
 import logging
@@ -30,6 +29,14 @@ class SimpleTracker(Tracker):
         self._detection_threshold = detection_threshold         # USED TO PARTITION DETECTIONS IN SUBSEQUENT TRACKING PROCEDURE
         self._creation_threshold = creation_threshold      
 
+        self.log(logging.INFO,
+            "|| TRACKER INITIALISED\n"
+            "\t\t\t\t    - MATCH THRESHOLD: {}\n"
+            "\t\t\t\t    - DETECTION THRESHOLD: {}\n"
+            "\t\t\t\t    - CREATION THRESHOLD: {}".format(
+            self._match_threshold, self._detection_threshold, self._creation_threshold
+            )
+        )
     ####### TRACKING #######
     def match_condition(self, cost):
         """

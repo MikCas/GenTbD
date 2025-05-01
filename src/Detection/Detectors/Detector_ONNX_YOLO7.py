@@ -57,8 +57,6 @@ class YOLOv7ONNX(Detector):
             model_outputs = self._session.get_outputs()
             self._output_names = [output.name for output in model_outputs] # Names
 
-            if self._logger: self._logger.info(f"DETECTOR INITIALISED - MODEL {model_path}")
-
         except Exception as e:
             self._logger.error(f"COULD NOT LOAD ONNX MODEL: {e}")
             raise
@@ -69,6 +67,11 @@ class YOLOv7ONNX(Detector):
         self._classes = classes
 
         self.create_onnx_model(model_path)
+
+        self.log(logging.INFO, f"|| DETECTOR INITIALISED\n"
+                    f"\t\t\t\t    - MODEL: {model_path}\n"
+                    f"\t\t\t\t    - CONFIDENCE: {confidence_threshold}\n"
+                    f"\t\t\t\t    - IOU: {iou_threshold}")
 
     ##### DETECTION #####
     def extract_boxes(self, boxes_xywh: np.ndarray) -> np.ndarray:
@@ -198,7 +201,7 @@ class YOLOv7ONNX(Detector):
         # Log inference time if a logger is available
         if self._logger:
             inference_time_ms = (time.perf_counter() - start_time) * 1000
-            self.log(logging.INFO, f"INFERENCE TIME: {inference_time_ms:.2f} ms")
+            self.log(logging.INFO, f"\t// INFERENCE TIME: {inference_time_ms:.2f} ms")
   
         return outputs
     def postprocess(self, outputs: list) -> tuple:

@@ -59,18 +59,6 @@ if __name__ == '__main__':
         logger=logger
     )
 
-    # # PROCESS VIDEO AND START TRACKING
-    # display_tracks_mode = 'id'  # Display the unique ID of each track
-    # videoProcessor = VideoProcessor(
-    #     detector,
-    #     tracker,
-    #     video_path=video_path,
-    #     continuous_mode=False,
-    #     display_tracks_mode=display_tracks_mode,
-    #     logger=logger
-    # )
-    # videoProcessor.process()
-
     ##### 4. VIDEO SETUP #####
     video_file = 'video1.mp4'
     video_path = os.path.join(os.getcwd(), 'data', video_file)
