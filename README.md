@@ -1,16 +1,16 @@
 # GenTbD: Generalised Tracking-by-Detection
 
-GenTbD is a Python-based framework for building **tracking-by-detection systems**. It provides a modular architecture for combining object detection and tracking, enabling users to create robust tracking pipelines tailored to their needs. This work is inspired by several prominent online MOT frameworks such as ([ByteTrack](https://github.com/ifzhang/ByteTrack) , [DeepSORT](https://github.com/nwojke/deep_sort), [StrongSORT](https://github.com/dyhBUPT/StrongSORT), [SMILETrack](https://github.com/WWangYuHsiang/SMILEtrack), [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose)) While these projects have influenced the design and modular structure of GenTbD, all code and implementation herein are original. 
+GenTbD is a Python-based framework for building **tracking-by-detection systems**. It provides a modular architecture for combining object detection and tracking, enabling users to create robust tracking pipelines tailored to their needs. Inspired by prominent online MOT frameworks such as [ByteTrack](https://github.com/ifzhang/ByteTrack), [DeepSORT](https://github.com/nwojke/deep_sort), [StrongSORT](https://github.com/dyhBUPT/StrongSORT), [SMILETrack](https://github.com/WWangYuHsiang/SMILEtrack), and [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose), GenTbD offers an original implementation with a focus on flexibility and extensibility.
 
 ---
 
 ## Key Features
 
-- **Abstracted Design**: Add custom video processors, detectors and trackers
-- **Generalised Detection**: Enables integration of various detector types, including object detectors, keypoint detectors, and re-identification (Re-ID) models. The framework adopts a generalised detection approach, allowing users to define identity-preserving properties (e.g., bounding boxes, appearance features, keypoints) and apply custom similarity metrics for more flexibility.
-- **Track Lifecycle**: Implements a clear track lifecycle (`NEW`, `MATCHED`, `LOST`, `RESERVED`) for better state management.
-- **Cascaded Assignment**: Implements a cascaded assignment algorithm, which is a multi-stage assignment procedure based on some priority ordering and can be used throughout the tracking procedure. 
-- **Generalised Tracking**:  Ability to modify tracking logic, association procedure, and track management.
+- **Modular Design**: Easily integrate custom video processors, detectors, and trackers.
+- **Generalised Detection**: Supports various detector types (e.g., object detectors, keypoint detectors, Re-ID models) with custom similarity metrics for identity preservation.
+- **Track Lifecycle Management**: Implements a clear track lifecycle (`NEW`, `MATCHED`, `LOST`, `RESERVED`) for robust state handling.
+- **Cascaded Assignment Algorithm**: Utilises a multi-stage assignment procedure to prioritise high-confidence detections and tracks.
+- **Customisable Tracking Logic**: Modify tracking logic, association procedures, and track management to suit specific use cases.
 
 ---
 
@@ -18,9 +18,9 @@ GenTbD is a Python-based framework for building **tracking-by-detection systems*
 
 The system consists of three core components:
 
-1. **Video Processor**: Manages video input and processes each frame.
-2. **Detector**: Performs object detection within frames.
-3. **Tracker**: Updates and manages tracks based on detected objects.
+1. **Video Processor**: Handles video input and processes each frame.
+2. **Detector**: Performs object detection on video frames.
+3. **Tracker**: Manages and updates tracks based on detected objects.
 
 ### Architecture Diagram
 ![Architecture](diagrams/GenTbD_architecture.png)
@@ -72,38 +72,46 @@ The system consists of three core components:
    ```bash
    python src/main.py
    ```
-5. Key events during video processing:
+### System features
+
+Key events during video processing:
     - **`c`**: Toggle between continuous and step-by-step processing modes.
     - **`s`**: Save the current frame as an image.
     - **`q`**: Quit the video processing.
 
-### Example Output
-![Example](diagrams/example.gif)
+There are two main track output moded:
+    - **'state'**: The bounding box colour outout is based on the state of the track.
+    ![Example](diagrams/genTbD_state.gif)
+    - **'id'**: The bounding box colour output is unique for each track.
+    ![Example](diagrams/genTbD_id.gif)
 
 ---
 
 ## File Structure
 
-Here’s how the project directory should be organized:
+The project directory is organised as follows:
 
 ```
 GenTbD/
-├── data/                     # Directory for input video files
+├── data/                     # Input video files
 │   └── your_video.mp4
-├── models/                   # Directory for model files
+├── models/                   # Model files
 │   └── yolov7.onnx
-├── diagrams/                 # Directory for diagrams and images
+├── diagrams/                 # Diagrams and images
 │   └── GenTbD_architecture.png
-├── src/                      # Source code directory
-│   ├── main.py               # Main script to run the system
-│   ├── Tracking/             # Tracking-related modules
+├── src/                      # Source code
+│   ├── main.py               # Main script
+│   ├── Tracking/             # Tracking modules
 │   │   ├── Track.py
 │   │   ├── Trackers/
 │   │   │   └── Tracker.py
 │   │   └── Partition.py
-│   └── Detecting/            # Detection-related modules
-│       └── Detections/
-│           └── Detection.py
+│   ├── Detecting/            # Detection modules
+│   │   └── Detections/
+│   │       └── Detection.py
+│   └── Temporal/             # Temporal processing modules
+│       ├── Temporal.py
+│       └── VideoProcessor.py
 ├── requirements.txt          # Python dependencies
 ├── README.md                 # Project documentation
 └── LICENSE                   # License file
@@ -113,30 +121,47 @@ GenTbD/
 
 ## Features
 
+### Association
+Given the use of different detectors, then the need to have variable det
+Association is the basis of the tracking algorithm and is used to match tracks (`T`) and detections (`D`). The output of association includes matched tracks (`M(T)`), matched detections (`M(D)`), unmatched tracks (`U(T)`), and unmatched detections (`U(D)`). Matched tracks and detections have a bijective relationship represented by the function `f`.
+### Association
+![Assignment](diagrams/simple_assignment.png)
+Association is the bases of the  tracking algorithm, and is used to match tracks T and detections D. The output of association are the matched tracks M(T) and detections M(D) and the unmatched tracks U(T) and dertections U(D). The matched tracks and detections have a bijective relation represented by the function $f$. 
+
 ### Track Lifecycle
-A track is defined as a state machine which is
-![lifecycle](diagrams/Track_lifecycle.png)
+![Assignment](diagrams/simple_assignment.png)
+After performing association, tracks are partitioned into matched or unmatched categories. Based on this, tracks are defined as a state machine, transitioning between states depending on whether they are matched or unmatched.
 
-### Assignment
-![assignment](diagrams/simple_assignment.png)
+A track has the following states:
+he track as a state amchine and chaneg the stat edepending on whether or not the track matched or did not match. The followign 
+- **Creation**: A track is created when first associated with a detection, marking the start of its identity.
+- **Activation**: A track transitions from `NEW` to `MATCHED` when confirmed as a consistent object identity.
+- **Deactivation**: If a track fails to reappear after being temporarily lost, it enters the `RESERVED` state, ending active tracking.
+- **Reactivation**: A track in the `RESERVED` state can be reactivated if successfully matched with a detection, returning to the `MATCHED` state.- **Activation**: A track transitions from `NEW` to `MATCHED` when confirmed as a consistent object identity.
+appear after being temporarily lost, it enters the `RESERVED` state, ending active tracking.
+![Lifecycle](diagrams/Track_lifecycle.png)- **Reactivation**: A track in the `RESERVED` state can be reactivated if successfully matched with a detection, returning to the `MATCHED` state.
 
-### Cascaded Assignment
-The system uses a cascaded assignment algorithm to prioritise high-confidence detections and tracks during the matching process. This improves accuracy and reduces false positives.
-![cascaded_assignment_algo](diagrams/Cascaded_assignment_algo.png)
-![cascaded_assignment](diagrams/Cascaded_assignment.png)
+### Cascaded Assignment![Lifecycle](diagrams/Track_lifecycle.png)
 
+The cascaded assignment algorithm prioritises high-confidence detections and tracks during the matching process, improving accuracy and reducing false positives.### Cascaded Assignment
 
----
+![Cascaded Assignment Algorithm](diagrams/Cascaded_assignment_algo.png)The cascaded assignment algorithm prioritises high-confidence detections and tracks during the matching process, improving accuracy and reducing false positives.
 
-## Future Work
+This is an example of how cascaded assignment works in the ByteTrack algorithm:nment_algo.png)
+![Cascaded Assignment](diagrams/Cascaded_assignment.png)
+s is an example of how Cascaded Assignment looks like for the ByteTrack algorithm
+---![Cascaded Assignment](diagrams/Cascaded_assignment.png)
 
-- Fully define system parameters for base version and create simpler interface
-- Add support for appearance-based tracking using re-identification models.
-- Implement keypoint-based tracking for human pose estimation.
-- Add weighted sum and gating thresholds for feature fusion.
+## Future Work---
 
----
-
-## License
+- Provide detailed documentation for the system.
+- Define system parameters for the base version and create a simpler interface.
+- Add support for appearance-based tracking using Re-ID models.
+- Implement keypoint-based tracking for human pose estimation.er interface.
+- Introduce weighted sum and gating thresholds for feature fusion.- Add support for appearance-based tracking using Re-ID models.
+mplement keypoint-based tracking for human pose estimation.
+---- Introduce weighted sum and gating thresholds for feature fusion.
+This project is licensed under the MIT License. See the `LICENSE` file for details.## License---
+This project is licensed under the MIT License. See the `LICENSE` file for details.## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.

@@ -65,7 +65,7 @@ if __name__ == '__main__':
     )
 
     ##### 4. VIDEO SETUP #####
-    video_file = 'video1.mp4'
+    video_file = 'TownCent.mp4'
     video_path = os.path.join(os.getcwd(), 'data', video_file)
     draw_mode = 'state'  # Options: 'state', 'id', 'none'   
 
