@@ -2,12 +2,16 @@
 
 GenTbD is a Python-based framework for building **tracking-by-detection systems**. It provides a modular architecture for combining object detection and tracking, enabling users to create robust tracking pipelines tailored to their needs. Inspired by prominent online MOT frameworks such as [ByteTrack](https://github.com/ifzhang/ByteTrack), [DeepSORT](https://github.com/nwojke/deep_sort), [StrongSORT](https://github.com/dyhBUPT/StrongSORT), [SMILETrack](https://github.com/WWangYuHsiang/SMILEtrack), and [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose), GenTbD offers an original implementation with a focus on flexibility and extensibility.
 
+<div align="center">
+    <img src="diagrams/simple_assignment.png" alt="Assignment">
+</div>
+
 ---
 
 ## Key Features
 
 - **Modular Design**: Easily integrate custom video processors, detectors, and trackers.
-- **Generalised Detection**: Supports various detector types (e.g., object detectors, keypoint detectors, Re-ID models) with custom similarity metrics for identity preservation.
+- **Generalised Detection**: Supports various detector types (e.g., object detectors, keypoint detectors, Re-ID models) with generalised detections having custom similarity metrics for identity preservation.
 - **Track Lifecycle Management**: Implements a clear track lifecycle (`NEW`, `MATCHED`, `LOST`, `RESERVED`) for robust state handling.
 - **Cascaded Assignment Algorithm**: Utilises a multi-stage assignment procedure to prioritise high-confidence detections and tracks.
 - **Customisable Tracking Logic**: Modify tracking logic, association procedures, and track management to suit specific use cases.
@@ -18,12 +22,37 @@ GenTbD is a Python-based framework for building **tracking-by-detection systems*
 
 The system consists of three core components:
 
-1. **Video Processor**: Handles video input and processes each frame.
-2. **Detector**: Performs object detection on video frames.
-3. **Tracker**: Manages and updates tracks based on detected objects.
+### 1. Temporal
+Handles video input and processes each frame. This component is responsible for managing the video source and applying detection and tracking logic frame-by-frame.
+
+- **`Temporal`**: Abstract base class for processing temporal data (e.g., videos). It provides methods for handling video playback, user input events, and frame-by-frame processing.
+- **`SimpleVideoProcessor`**: A concrete implementation of `Temporal` that integrates detection and tracking logic. It processes each frame, applies detection and tracking, and displays the results.
+
+### 2. Detector
+Performs object detection on video frames. This component abstracts the detection logic and supports various detection models. It also includes the structure and behavior of detections and their properties.
+
+- **`Detector`**: Abstract base class for detectors. Defines the interface for preprocessing, inference, and postprocessing.
+- **`YOLOv7ONNX`**: A concrete implementation of `Detector` for the YOLOv7 model in ONNX format. It handles object detection using a pre-trained YOLOv7 model.
+- **`Detection`**: Abstract base class for detections. Defines the interface for calculating similarity and visualizing detections.
+- **`ObjectDetection`**: A concrete implementation of `Detection` for object detection. It includes properties like bounding boxes, class IDs, and confidence scores.
+- **`Property`**: Abstract base class for identity-preserving properties (IPPs) and non-identity-preserving properties (NIPPs). Defines the interface for calculating similarity between properties.
+- **`BoundingBox`**: A concrete implementation of `Property` representing a bounding box in 2D space. It supports various formats (e.g., corners, center) and provides methods for calculating IoU.
+
+### 3. Tracker
+Manages and updates tracks based on detected objects. This component is responsible for associating detections with existing tracks and managing track states.
+
+- **`Track`**: Represents an individual track (object identity) in the system. It includes attributes like trajectory, Kalman filter, and state transitions.
+- **`Trajectory`**: Stores the history of detections associated with a track. It supports querying and managing the trajectory.
+- **`KalmanFilter`**: Implements a Kalman filter for smoothing predictions and handling noise in object tracking.
+- **`Partition`**: Represents the result of an association procedure, including matched and unmatched tracks/detections.
+- **`Tracker`**: Abstract base class for trackers. Defines the interface for association, track management, and lifecycle handling.
+- **`SimpleTracker`**: A concrete implementation of `Tracker` that uses cascaded assignment for associating detections with tracks.
+
+---
 
 ### Architecture Diagram
-![Architecture](diagrams/GenTbD_architecture.png)
+Conceptual architecture diagram constructed as a node network in TouchDesigner.
+![Architecture](diagrams/architecture.png)
 
 ---
 
@@ -72,18 +101,19 @@ The system consists of three core components:
    ```bash
    python src/main.py
    ```
-### System features
+
+### System Features
 
 Key events during video processing:
-    - **`c`**: Toggle between continuous and step-by-step processing modes.
-    - **`s`**: Save the current frame as an image.
-    - **`q`**: Quit the video processing.
+- **`c`**: Toggle between continuous and step-by-step processing modes.
+- **`s`**: Save the current frame as an image.
+- **`q`**: Quit the video processing.
 
-There are two main track output moded:
-    - **'state'**: The bounding box colour outout is based on the state of the track.
-    ![Example](diagrams/genTbD_state.gif)
-    - **'id'**: The bounding box colour output is unique for each track.
-    ![Example](diagrams/genTbD_id.gif)
+There are two main track output modes:
+- **'state'**: The bounding box colour output is based on the state of the track.
+![video_state](diagrams/genTbD_state.gif)
+- **'id'**: The bounding box colour output is unique for each track.
+![video_id](diagrams/genTbD_id.gif)
 
 ---
 
@@ -119,49 +149,15 @@ GenTbD/
 
 ---
 
-## Features
-
-### Association
-Given the use of different detectors, then the need to have variable det
-Association is the basis of the tracking algorithm and is used to match tracks (`T`) and detections (`D`). The output of association includes matched tracks (`M(T)`), matched detections (`M(D)`), unmatched tracks (`U(T)`), and unmatched detections (`U(D)`). Matched tracks and detections have a bijective relationship represented by the function `f`.
-### Association
-![Assignment](diagrams/simple_assignment.png)
-Association is the bases of the  tracking algorithm, and is used to match tracks T and detections D. The output of association are the matched tracks M(T) and detections M(D) and the unmatched tracks U(T) and dertections U(D). The matched tracks and detections have a bijective relation represented by the function $f$. 
-
-### Track Lifecycle
-![Assignment](diagrams/simple_assignment.png)
-After performing association, tracks are partitioned into matched or unmatched categories. Based on this, tracks are defined as a state machine, transitioning between states depending on whether they are matched or unmatched.
-
-A track has the following states:
-he track as a state amchine and chaneg the stat edepending on whether or not the track matched or did not match. The followign 
-- **Creation**: A track is created when first associated with a detection, marking the start of its identity.
-- **Activation**: A track transitions from `NEW` to `MATCHED` when confirmed as a consistent object identity.
-- **Deactivation**: If a track fails to reappear after being temporarily lost, it enters the `RESERVED` state, ending active tracking.
-- **Reactivation**: A track in the `RESERVED` state can be reactivated if successfully matched with a detection, returning to the `MATCHED` state.- **Activation**: A track transitions from `NEW` to `MATCHED` when confirmed as a consistent object identity.
-appear after being temporarily lost, it enters the `RESERVED` state, ending active tracking.
-![Lifecycle](diagrams/Track_lifecycle.png)- **Reactivation**: A track in the `RESERVED` state can be reactivated if successfully matched with a detection, returning to the `MATCHED` state.
-
-### Cascaded Assignment![Lifecycle](diagrams/Track_lifecycle.png)
-
-The cascaded assignment algorithm prioritises high-confidence detections and tracks during the matching process, improving accuracy and reducing false positives.### Cascaded Assignment
-
-![Cascaded Assignment Algorithm](diagrams/Cascaded_assignment_algo.png)The cascaded assignment algorithm prioritises high-confidence detections and tracks during the matching process, improving accuracy and reducing false positives.
-
-This is an example of how cascaded assignment works in the ByteTrack algorithm:nment_algo.png)
-![Cascaded Assignment](diagrams/Cascaded_assignment.png)
-s is an example of how Cascaded Assignment looks like for the ByteTrack algorithm
----![Cascaded Assignment](diagrams/Cascaded_assignment.png)
-
-## Future Work---
+## Future Work
 
 - Provide detailed documentation for the system.
 - Define system parameters for the base version and create a simpler interface.
 - Add support for appearance-based tracking using Re-ID models.
-- Implement keypoint-based tracking for human pose estimation.er interface.
-- Introduce weighted sum and gating thresholds for feature fusion.- Add support for appearance-based tracking using Re-ID models.
-mplement keypoint-based tracking for human pose estimation.
----- Introduce weighted sum and gating thresholds for feature fusion.
-This project is licensed under the MIT License. See the `LICENSE` file for details.## License---
-This project is licensed under the MIT License. See the `LICENSE` file for details.## License
+- Implement keypoint-based tracking for human pose estimation.
+- Introduce weighted sum and gating thresholds for feature fusion.
 
+---
+
+## License
 This project is licensed under the MIT License. See the `LICENSE` file for details.
