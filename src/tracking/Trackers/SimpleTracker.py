@@ -10,7 +10,7 @@ import cv2
 
 class SimpleTracker(Tracker):
     """
-    Inherits from the Tracker class and implements the tracking logic. Tracking algorithm is based on the ByteTrack algorithm https://github.com/ifzhang/ByteTrack.
+    Inherits from the Tracker class and implements the tracking logic.
 
     Attributes:
         match_thresholds (List[float]): List of thresholds for matching tracks and detections.
@@ -200,10 +200,11 @@ class SimpleTracker(Tracker):
         for detection in detections:
             self.create(timestep, detection)
 
-    ##### ASSIGNMENT #####
-    def bytetrack(self, timestep: int, detections: List[Detection]) -> Partition: 
+    ##### ASSOCIATION #####
+    def bytetrack_association(self, timestep: int, detections: List[Detection]) -> Partition: 
         """
-        Bytetrack tracking algorithm
+
+        Bytetrack association implementation 
 
         This procedure handles the assignment of detections to tracks in multiple stages:
         1. High-confidence detections are matched with matched and lost tracks.
@@ -213,11 +214,10 @@ class SimpleTracker(Tracker):
         Args:
             timestep (int): The current timestep.
             detections (List[Detection]): List of detections to assign to tracks.
-
         Returns:
             Partition: A Partition object containing matched tracks, unmatched tracks, and unmatched detections.
         """
-        self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
+        self.log(logging.INFO, "\t||CASCADED ASSOCIATION")
 
         # Step 1: Partition detections into high and low confidence
         detections_high, detections_low = self.partition_detections(detections)
@@ -226,17 +226,17 @@ class SimpleTracker(Tracker):
         matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
 
         # Step 3: Assign high-confidence detections to matched and lost tracks
-        partition1 = self.assignment(timestep, matched_lost_tracks, detections_high, self._match_thresholds[0])
+        partition1 = self.association(timestep, matched_lost_tracks, detections_high, self._match_thresholds[0])
 
         # Step 4: Assign low-confidence detections to unmatched tracks from partition1
         unmatched_tracks_partition1 = TrackList(
             track_states=matched_lost_tracks.track_states, 
             tracks=partition1.unmatched_x
         )
-        partition2 = self.assignment(timestep, unmatched_tracks_partition1, detections_low, self._match_thresholds[1])
+        partition2 = self.association(timestep, unmatched_tracks_partition1, detections_low, self._match_thresholds[1])
 
         # Step 5: Assign unmatched high-confidence detections to new tracks
-        partition3 = self.assignment(timestep, self._new_tracks, partition1.unmatched_y, self._match_thresholds[2])
+        partition3 = self.association(timestep, self._new_tracks, partition1.unmatched_y, self._match_thresholds[2])
 
         # Step 6: Combine results from all partitions
         matched_tracks_detections = partition1.matched + partition2.matched + partition3.matched
@@ -252,49 +252,48 @@ class SimpleTracker(Tracker):
 
         return final_partition
     
-    def bytetrack_cascade(self, timestep: int, detections: List[Detection]) -> Partition:
-        """
-        Equivalent Bytetrack tracking algorithm with a cascaded assignment approach.
+    # def simple_cascaded_association(self, timestep: int, detections: List[Detection]) -> Partition:
+    #     """
 
-        This procedure handles the assignment of detections to tracks in multiple stages:
-        1. High-confidence detections are matched with matched and lost tracks.
-        2. Remaining unmatched tracks are matched with low-confidence detections.
-        3. New tracks are matched with remaining unmatched high-confidence detections.
+    #     This procedure handles the assignment of detections to tracks in multiple stages:
+    #     1. High-confidence detections are matched with matched and lost tracks.
+    #     2. Remaining unmatched tracks are matched with low-confidence detections.
+    #     3. New tracks are matched with remaining unmatched high-confidence detections.
  
-        Args:
-            timestep (int): The current timestep.
-            detections (List[Detection]): List of detections to assign to tracks.
+    #     Args:
+    #         timestep (int): The current timestep.
+    #         detections (List[Detection]): List of detections to assign to tracks.
 
-        Returns:
-            Partition: A Partition object containing matched tracks, unmatched tracks, and unmatched detections.
-        """
-        self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
+    #     Returns:
+    #         Partition: A Partition object containing matched tracks, unmatched tracks, and unmatched detections.
+    #     """
+    #     self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
 
-        # Step 1: Partition detections into high and low confidence
-        detections_high, detections_low = self.partition_detections(detections)
+    #     # Step 1: Partition detections into high and low confidence
+    #     detections_high, detections_low = self.partition_detections(detections)
 
-        # Step 2: Combine matched and lost tracks
-        matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
+    #     # Step 2: Combine matched and lost tracks
+    #     matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
 
-        # Step 3: Cascaded assignment of high-confidence detections to matched and lost tracks
-        partition1 = self.cascaded_assignment(timestep, matched_lost_tracks, [detections_high, detections_low], self._match_thresholds[:2])
+    #     # Step 3: Cascaded assignment of high-confidence detections to matched and lost tracks
+    #     partition1 = self.cascaded_association(timestep, matched_lost_tracks, [detections_high, detections_low], self._match_thresholds[:2])
 
-        # Step 4: Assign unmatched high-confidence detections to new tracks
-        partition2 = self.assignment(timestep, self._new_tracks, partition1.unmatched_y, self._match_thresholds[2])
+    #     # Step 4: Assign unmatched high-confidence detections to new tracks
+    #     partition2 = self.association(timestep, self._new_tracks, partition1.unmatched_y, self._match_thresholds[2])
 
-        # Step 6: Combine results from all partitions
-        matched_tracks_detections = partition1.matched + partition2.matched 
-        unmatched_tracks = partition1.unmatched_x + partition2.unmatched_x
-        unmatched_detections = partition2.unmatched_y
+    #     # Step 6: Combine results from all partitions
+    #     matched_tracks_detections = partition1.matched + partition2.matched 
+    #     unmatched_tracks = partition1.unmatched_x + partition2.unmatched_x
+    #     unmatched_detections = partition2.unmatched_y
 
-        # Create final partition
-        final_partition = Partition(
-            matched=matched_tracks_detections, 
-            unmatched_x=unmatched_tracks, 
-            unmatched_y=unmatched_detections
-        )
+    #     # Create final partition
+    #     final_partition = Partition(
+    #         matched=matched_tracks_detections, 
+    #         unmatched_x=unmatched_tracks, 
+    #         unmatched_y=unmatched_detections
+    #     )
 
-        return final_partition
+    #     return final_partition
 
 
     def update(self, timestep: int, detections: List[Detection]) -> None:
@@ -320,11 +319,11 @@ class SimpleTracker(Tracker):
                     self.create(timestep, detection)
             # If new tracks, perform simple procedure
             else:
-                partition = self.assignment(timestep, self._new_tracks, detections, self._match_thresholds[0])
+                partition = self.association(timestep, self._new_tracks, detections, self._match_thresholds[0])
                 self.track_management(timestep, partition)
         else:
             # If matched or lost tracks, perform subsequent tracking procedure
-            partition = self.bytetrack(timestep, detections)
+            partition = self.bytetrack_association(timestep, detections)
             self.track_management(timestep, partition)
 
         self.log(logging.INFO, "\t||{}".format(self._new_tracks))
