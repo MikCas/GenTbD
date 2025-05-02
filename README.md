@@ -51,8 +51,8 @@ Manages and updates tracks based on detected objects. This component is responsi
 ---
 
 ### Architecture Diagram
-Conceptual architecture diagram constructed as a node network in TouchDesigner.
 ![Architecture](diagrams/architecture.png)
+***Conceptual architecture diagram constructed as a node network in TouchDesigner.***
 
 ---
 
