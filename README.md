@@ -2,8 +2,8 @@
 
 GenTbD is a Python-based framework for building **tracking-by-detection systems**. It provides a modular architecture for combining object detection and tracking, enabling users to create robust tracking pipelines tailored to their needs. Inspired by prominent online MOT frameworks such as [ByteTrack](https://github.com/ifzhang/ByteTrack), [DeepSORT](https://github.com/nwojke/deep_sort), [StrongSORT](https://github.com/dyhBUPT/StrongSORT), [SMILETrack](https://github.com/WWangYuHsiang/SMILEtrack), and [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose), GenTbD offers an original implementation with a focus on flexibility and extensibility.
 
-<div align="center">
-    <img src="diagrams/simple_assignment.png" alt="Assignment">
+<div align="center" style="width: 60%; margin: auto;">
+   <img src="diagrams/simple_assignment.png" alt="Assignment" width="600">
 </div>
 
 ---
@@ -111,9 +111,9 @@ Key events during video processing:
 
 There are two main track output modes:
 - **'state'**: The bounding box colour output is based on the state of the track.
-![video_state](diagrams/genTbD_state.gif)
+![video_state](diagrams/GenTbD_state.gif)
 - **'id'**: The bounding box colour output is unique for each track.
-![video_id](diagrams/genTbD_id.gif)
+![video_id](diagrams/GenTbD_id.gif)
 
 ---
 
@@ -151,6 +151,7 @@ GenTbD/
 
 ## Future Work
 
+- Update requirements and readme.
 - Provide detailed documentation for the system.
 - Define system parameters for the base version and create a simpler interface.
 - Add support for appearance-based tracking using Re-ID models.
