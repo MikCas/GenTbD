@@ -1,6 +1,6 @@
 # GenTbD: Generalised Tracking-by-Detection
 
-GenTbD is a Python-based generalised framework for building **tracking-by-detection (TbD) systems**. It provides a modular architecture for combining object detection and tracking, enabling users to create robust tracking pipelines tailored to their needs. Inspired by the techniques implemented in current online TbD Multiple Object Tracking (MOT) algorithms such as [ByteTrack](https://github.com/ifzhang/ByteTrack), [DeepSORT](https://github.com/nwojke/deep_sort), [StrongSORT](https://github.com/dyhBUPT/StrongSORT), [SMILETrack](https://github.com/WWangYuHsiang/SMILEtrack), and [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose).
+Generalised Tracking-by-Detection (GenTbD) is a Python-based generalised framework for building **Online Multiple-Object Tracking (MOT) systems**. It provides a modular architecture for combining object detection and tracking, enabling users to create robust tracking-by-detection pipelines tailored to their needs. Inspired by the techniques implemented in current online TbD MOT algorithms such as [ByteTrack](https://github.com/ifzhang/ByteTrack), [DeepSORT](https://github.com/nwojke/deep_sort), [StrongSORT](https://github.com/dyhBUPT/StrongSORT), [SMILETrack](https://github.com/WWangYuHsiang/SMILEtrack), and [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose).
 
 <div align="center" style="width: 60%; margin: auto;">
    <img src="diagrams/simple_assignment.png" alt="Assignment" width="600">
@@ -152,8 +152,8 @@ GenTbD/
 ## Future Work
 
 - Update requirements and readme.
-- Provide detailed documentation for the system.
-- Define system parameters for the base version and create a simpler interface.
+- Provide detailed documentation.
+- Define system parameters for the base version in main and create a simpler interface.
 - Add support for appearance-based tracking using Re-ID models.
 - Implement keypoint-based tracking for human pose estimation.
 - Introduce weighted sum and gating thresholds for feature fusion.
