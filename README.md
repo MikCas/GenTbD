@@ -102,7 +102,7 @@ Manages and updates tracks based on detected objects. This component is responsi
    python src/main.py
    ```
 
-### System Features
+### User Controls
 
 Key events during video processing:
 - **`c`**: Toggle between continuous and step-by-step processing modes.
