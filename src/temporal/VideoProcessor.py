@@ -1,6 +1,6 @@
-from Temporal.Temporal import Temporal
-from Detecting.Detectors.Detector import Detector
-from Tracking.Trackers.Tracker import Tracker
+from temporal.Temporal import Temporal
+from detecting.detectors.Detector import Detector
+from tracking.Trackers.Tracker import Tracker
 
 import logging
 import cv2
@@ -9,7 +9,7 @@ class SimpleVideoProcessor(Temporal):
     """
     A simple video processor that perform detection and tracking on each frame of a video.
 
-    Inherits from the Temporal class.
+    Inherits from the temporal class.
 
     Attributes:
         - detector (Detector): The object detector to use.
@@ -37,7 +37,7 @@ class SimpleVideoProcessor(Temporal):
         # Perform detection 
         self.log(logging.INFO, "|| DETECTION")  
         detections = self._detector.detect(image)
-        # self._detector.draw_detections(detections, image)
+        self._detector.draw_detections(detections, image)
 
         # Perform tracking
         self.log(logging.INFO, "|| TRACKING")

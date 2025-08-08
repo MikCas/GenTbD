@@ -1,7 +1,7 @@
-from Detecting.Detections.ObjectDetection import ObjectDetection as Detection
-from Tracking.Track import Track, TrackState
-from Tracking.Partition import Partition
-from Tracking.Trackers.Tracker import TrackList, Tracker
+from detecting.detections.ObjectDetection import ObjectDetection as Detection
+from tracking.Track import Track, TrackState
+from tracking.Partition import Partition
+from tracking.Trackers.Tracker import TrackList, Tracker
 
 import logging
 from typing import List, Optional, Tuple

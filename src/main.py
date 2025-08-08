@@ -1,9 +1,11 @@
-from Detecting.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
-from Tracking.Trackers.SimpleTracker import SimpleTracker
-from Temporal.VideoProcessor import SimpleVideoProcessor
+from detecting import YOLOv8ONNX
+# from detecting.detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
+from tracking.Trackers.SimpleTracker import SimpleTracker
+from temporal.VideoProcessor import SimpleVideoProcessor
 
 import logging
 import os
+from dotenv import load_dotenv
 
 def setup_logger():
     """
@@ -31,16 +33,18 @@ if __name__ == '__main__':
     4. Sets up the video processor.
     5. Processes the video file to detect and track objects.q
     """
+    # Load .env
+    load_dotenv()
 
     ##### 1. LOGGER #####
     logger = setup_logger()
 
     ##### 3. DETECTOR #####
-    model_path = 'models/yolov7_640x640.onnx'
+    model_path = os.environ['MODEL_PATH2']
     confidence_threshold = 0.1
     iou_threshold = 0.5
-    classes = [0]
-    detector = YOLOv7ONNX(
+    classes = [0,1]
+    detector = YOLOv8ONNX(
         model_path,
         confidence_threshold=confidence_threshold,
         iou_threshold=iou_threshold,
@@ -65,9 +69,10 @@ if __name__ == '__main__':
     )
 
     ##### 4. VIDEO SETUP #####
-    video_file = 'TownCent.mp4'
-    video_path = os.path.join(os.getcwd(), 'data', video_file)
-    draw_mode = 'state'  # Options: 'state', 'id', 'none'   
+    video_file = os.environ['VIDEO_FILE']
+    cwd: str = os.getcwd()
+    video_path = os.path.join(os.path.dirname(cwd), video_file)
+    draw_mode = 'id'  # Options: 'state', 'id', 'none'
 
     vp = SimpleVideoProcessor(video_path=video_path, 
                               detector=detector, 

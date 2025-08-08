@@ -1,4 +1,4 @@
-from Detecting.Detections.Detection import Detection
+from ..detections.Detection import Detection
 
 from abc import ABC, abstractmethod
 import cv2
@@ -8,7 +8,7 @@ import logging
 
 class Detector(ABC): 
     """
-    Abstract base class for a detector. Detectors can be object detectors, face detectors, keypoint estimators, re-id systems etc..
+    Abstract base class for a detector. detectors can be object detectors, face detectors, keypoint estimators, re-id systems etc..
 
     Attributes:
         model_path (str): Path to the model file.
