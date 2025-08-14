@@ -59,6 +59,8 @@ class SimpleVideoProcessor(Temporal):
             image = self.continue_video()
             if image is None: break        # End of video or error reading frame
 
+            cv2.imwrite('example_image.png', image)
+
             # Perform detection and tracking on the image 
             self.process_image(image)
 

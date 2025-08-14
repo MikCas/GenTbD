@@ -43,7 +43,7 @@ if __name__ == '__main__':
     model_path = os.environ['MODEL_PATH2']
     confidence_threshold = 0.1
     iou_threshold = 0.5
-    classes = [0,1]
+    classes = [0]
     detector = YOLOv8ONNX(
         model_path,
         confidence_threshold=confidence_threshold,

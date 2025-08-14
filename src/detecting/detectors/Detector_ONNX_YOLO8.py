@@ -103,6 +103,11 @@ class YOLOv8ONNX(Detector):
         x2 = x_center + width / 2
         y2 = y_center + height / 2
 
+        # x2 = boxes_xywh[:, 0] / scale
+        # y2 = boxes_xywh[:, 1] / scale
+        # x1 = boxes_xywh[:, 2] / scale
+        # y1 = boxes_xywh[:, 3] / scale
+
         # Clip coordinates to image boundaries
         x1 = np.clip(x1, 0, image_width)
         y1 = np.clip(y1, 0, image_height)
@@ -170,18 +175,22 @@ class YOLOv8ONNX(Detector):
         pad_bottom = input_height - resized_height - pad_top
         pad_left = (input_width - resized_width) // 2
         pad_right = input_width - resized_width - pad_left
-        # padded_image = cv2.copyMakeBorder(
-        #     resized_image,
-        #     pad_top, pad_bottom, pad_left, pad_right,
-        #     cv2.BORDER_CONSTANT,
-        #     value=(114, 114, 114)  # Padding color (gray)
-        # )
-        #
+        padded_image = cv2.copyMakeBorder(
+            resized_image,
+            pad_top, pad_bottom, pad_left, pad_right,
+            cv2.BORDER_CONSTANT,
+            value=(114, 114, 114)  # Padding color (gray)
+        )
+
         # # Step 4: Normalize the image and convert it to a blob
         # blob = padded_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32) / 255.0
 
 
-        blob = resized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32) / 255.0
+        blob = padded_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32) / 255.0
+
+        debug_img = (blob[0].transpose(1, 2, 0) * 255).astype(np.uint8)
+        cv2.imshow("Input to model", debug_img)
+        cv2.waitKey(0)
 
         # Save parameters for postprocessing
         self._image_shape = (image_height, image_width)  # Original image dimensions
@@ -273,7 +282,7 @@ class YOLOv8ONNX(Detector):
         predictions[:, 4:] = 1 / (1 + np.exp(-predictions[:, 4:]))  # sigmoid
 
         # Step 3: Filter predictions based on class confidence
-        scores = np.max(predictions[:, 5:], axis=1)
+        scores = np.max(predictions[:,  5:], axis=1)
         class_confidence_mask = scores > self._confidence_threshold
         predictions = predictions[class_confidence_mask]
         scores = scores[class_confidence_mask]
@@ -286,6 +295,9 @@ class YOLOv8ONNX(Detector):
         predictions = predictions[class_filter_mask]
         scores = scores[class_filter_mask]
         class_ids = class_ids[class_filter_mask]
+
+        print("Scale:", self._scale)
+        print("Padding:", self._padding)
 
         # Step 5: Extract bounding boxes and apply non-maximum suppression (NMS)
         boxes = self.extract_boxes(predictions)

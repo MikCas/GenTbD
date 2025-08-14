@@ -79,6 +79,8 @@ class ObjectDetection(Detection):
         # Extract bounding box coordinates
         x_min, y_min, x_max, y_max = map(int, self._bounding_box.xyxy())
 
+
+
         # Add confidence score to the label
         label_with_score = f"{label} - {self._confidence_score:.2f}"
         
