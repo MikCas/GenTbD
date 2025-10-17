@@ -42,10 +42,16 @@ NEXT STEPS - CODE IMPROVEMENTS
 ═══════════════════════════════════════════════════════════════════════════════
 
 QUICK WINS (Clean up existing code):
-[ ] Delete duplicate code in Tracker.py (lines 369-430)
-[ ] Delete commented code in SimpleTracker.py (lines 255-296)
-[ ] Fix typo in VideoProcessor.py line 57
-[ ] Extract IoU/NMS to src/utils/geometry.py
+[x] Delete duplicate code in Tracker.py (lines 369-430)
+    ✓ Removed 62 lines of duplicate abstract methods
+[x] Delete commented code in SimpleTracker.py (lines 255-296)
+    ✓ Removed 42 lines of dead code
+[x] Fix typo in VideoProcessor.py line 57
+    ✓ Fixed: "thte vide" → "the video"
+[x] Extract IoU/NMS to src/utils/geometry.py
+    ✓ Created utils module with reusable geometry functions
+    ✓ Updated Detector.py and Detector_ONNX_YOLO7.py to use utils
+    ✓ Net result: -178 lines duplicate code, +106 lines clean utilities
 
 BETTER UX:
 [ ] Add config.yaml for easy parameter tuning
