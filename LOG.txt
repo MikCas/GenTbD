@@ -30,15 +30,38 @@ TODO
     ✓ Imports work from anywhere!
     ✓ No deprecation warnings
 
+[x] Test it works
+    ✓ Runs successfully with real YOLO model + video!
+
+[x] Create git branch and commit refactor
+    git checkout -b feature/clean-refactor
+    ✓ Pushed to GitHub
+
+═══════════════════════════════════════════════════════════════════════════════
+NEXT STEPS - CODE IMPROVEMENTS
+═══════════════════════════════════════════════════════════════════════════════
+
+QUICK WINS (Clean up existing code):
 [ ] Delete duplicate code in Tracker.py (lines 369-430)
-
 [ ] Delete commented code in SimpleTracker.py (lines 255-296)
-
-[ ] Fix typo line 57 in VideoProcessor.py
-
+[ ] Fix typo in VideoProcessor.py line 57
 [ ] Extract IoU/NMS to src/utils/geometry.py
 
-[ ] Test it all works
+BETTER UX:
+[ ] Add config.yaml for easy parameter tuning
+[ ] Better logging (less spam, more useful info)
+[ ] Save output video + track data
+[ ] Add FPS counter
+
+FEATURES (from paper):
+[ ] Re-ID support (appearance-based tracking)
+[ ] Keypoint tracking (pose estimation)
+[ ] MOT metrics (MOTA, MOTP, IDF1)
+
+CODE QUALITY:
+[ ] Consistent type hints everywhere
+[ ] Consistent docstrings (Google/NumPy style)
+[ ] Unit tests for critical logic
 
 ═══════════════════════════════════════════════════════════════════════════════
 NOTES
