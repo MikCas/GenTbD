@@ -355,7 +355,7 @@ class Tracker(ABC):
         )
 
         return partition
-    
+
     @abstractmethod
     def update(self, timestep: int, detections: List[Detection]) -> None:
         """
@@ -363,69 +363,6 @@ class Tracker(ABC):
         Args:
             timestep (int): The current timestep.
             detections (list[Detection]): The list of detections to update the tracker with.
-        """
-        pass
-        
-    ##### LIFECYCLE #####
-    @abstractmethod
-    def create(self, timestep: int, detection: Detection) -> Optional[Track]:
-        """
-        Create a new track identity given a detection.
-        Args:
-            timestep (int): The current timestep.
-            detection (Detection): The detection initializing the track identity.
-        Returns:
-            Optional[Track]: The created track or None if the creation condition is not passed.
-        """
-        pass
-
-    @abstractmethod
-    def activate(self, timestep: int, track: Track, detection: Detection) -> None:
-        """
-        Activate a track identity given a detection.
-        Args:
-            timestep (int): The current timestep.
-            track (Track): The track to be activated.
-            detection (Detection): The detection activating the track identity.
-        """
-        pass
-
-    @abstractmethod
-    def deactivate(self, track: Track) -> None:
-        """
-        Deactivate a track.
-        Args:
-            track (Track): The track to be deactivated.
-        """
-        pass
-
-    ##### TRACK MANAGEMENT #####
-    @abstractmethod
-    def process_matches(self, timestep: int, matches: List) -> None:
-        """
-        Process the matches between tracks and detections.
-        Args:
-            timestep (int): The current timestep.
-            matches (List): List of matched track-detection pairs.
-        """
-        pass
-
-    @abstractmethod
-    def process_unmatched_tracks(self, tracks: List[Track]) -> None:
-        """
-        Process unmatched tracks and update their state.
-        Args:
-            tracks (List[Track]): List of unmatched tracks to process.
-        """
-        pass
-
-    @abstractmethod
-    def process_unmatched_detections(self, timestep: int, detections: List[Detection]) -> None:
-        """
-        Process unmatched detections and update their state.
-        Args:
-            timestep (int): The current timestep.
-            detections (List[Detection]): List of unmatched detections to process.
         """
         pass
 

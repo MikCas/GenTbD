@@ -54,7 +54,7 @@ class SimpleVideoProcessor(Temporal):
         if self._logger: print()
         self.log(logging.INFO, f"|| BEGIN VIDEO PROCESSING")
 
-        # Iterate through thte vide, reading a frame at each iteration
+        # Iterate through the video, reading a frame at each iteration
         while True:
             image = self.continue_video()
             if image is None: break        # End of video or error reading frame

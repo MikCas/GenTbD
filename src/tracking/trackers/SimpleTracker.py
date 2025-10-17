@@ -251,50 +251,6 @@ class SimpleTracker(Tracker):
         )
 
         return final_partition
-    
-    # def simple_cascaded_association(self, timestep: int, detections: List[Detection]) -> Partition:
-    #     """
-
-    #     This procedure handles the assignment of detections to tracks in multiple stages:
-    #     1. High-confidence detections are matched with matched and lost tracks.
-    #     2. Remaining unmatched tracks are matched with low-confidence detections.
-    #     3. New tracks are matched with remaining unmatched high-confidence detections.
- 
-    #     Args:
-    #         timestep (int): The current timestep.
-    #         detections (List[Detection]): List of detections to assign to tracks.
-
-    #     Returns:
-    #         Partition: A Partition object containing matched tracks, unmatched tracks, and unmatched detections.
-    #     """
-    #     self.log(logging.INFO, "\t||CASCADED ASSIGNMENT")
-
-    #     # Step 1: Partition detections into high and low confidence
-    #     detections_high, detections_low = self.partition_detections(detections)
-
-    #     # Step 2: Combine matched and lost tracks
-    #     matched_lost_tracks = TrackList.combine(self._matched_tracks, self._lost_tracks)
-
-    #     # Step 3: Cascaded assignment of high-confidence detections to matched and lost tracks
-    #     partition1 = self.cascaded_association(timestep, matched_lost_tracks, [detections_high, detections_low], self._match_thresholds[:2])
-
-    #     # Step 4: Assign unmatched high-confidence detections to new tracks
-    #     partition2 = self.association(timestep, self._new_tracks, partition1.unmatched_y, self._match_thresholds[2])
-
-    #     # Step 6: Combine results from all partitions
-    #     matched_tracks_detections = partition1.matched + partition2.matched 
-    #     unmatched_tracks = partition1.unmatched_x + partition2.unmatched_x
-    #     unmatched_detections = partition2.unmatched_y
-
-    #     # Create final partition
-    #     final_partition = Partition(
-    #         matched=matched_tracks_detections, 
-    #         unmatched_x=unmatched_tracks, 
-    #         unmatched_y=unmatched_detections
-    #     )
-
-    #     return final_partition
-
 
     def update(self, timestep: int, detections: List[Detection]) -> None:
         """

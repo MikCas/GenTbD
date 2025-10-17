@@ -1,6 +1,7 @@
 from properties.BoundingBox import BoundingBox
 from detecting.detections.ObjectDetection import ObjectDetection as Detection
-from detecting.detectors.Detector import Detector 
+from detecting.detectors.Detector import Detector
+from utils.geometry import nms 
 
 from abc import ABC
 import cv2
@@ -255,7 +256,7 @@ class YOLOv7ONNX(Detector):
 
         # Step 5: Extract bounding boxes and apply non-maximum suppression (NMS)
         boxes = self.extract_boxes(predictions)
-        selected_indices = Detector.nms(boxes, scores, self._iou_threshold)
+        selected_indices = nms(boxes, scores, self._iou_threshold)
 
         # Return filtered boxes, class IDs, and scores
         return boxes[selected_indices], class_ids[selected_indices], scores[selected_indices]
