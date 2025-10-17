@@ -53,15 +53,47 @@ QUICK WINS (Clean up existing code):
     ✓ Updated Detector.py and Detector_ONNX_YOLO7.py to use utils
     ✓ Net result: -178 lines duplicate code, +106 lines clean utilities
 
+PHASE 1: PYTORCH FOUNDATION (COMPLETE!)
+[x] Install ultralytics and pyyaml
+[x] Create Backend abstraction (src/detecting/backends/Backend.py)
+    ✓ Abstract interface for all backends
+[x] Implement PyTorchBackend
+    ✓ Auto device detection (CUDA > MPS > CPU)
+    ✓ Ultralytics YOLO integration
+    ✓ ~80 lines with extensive documentation
+[x] Implement ONNXBackend
+    ✓ Execution provider detection
+    ✓ Refactored from existing ONNX code
+[x] Create YOLOv8 detector (Detector_PyTorch_YOLO.py)
+    ✓ ~50 lines vs 263 for ONNX!
+    ✓ Auto-downloads models
+    ✓ Preprocessing handled by Ultralytics
+[x] Test script (test_pytorch.py)
+    ✓ Both ONNX and PyTorch work
+    ✓ 16 vs 15 detections (consistent!)
+    ✓ ONNX: 10ms, PyTorch: 31ms (ONNX faster as expected)
+
+What I learned:
+- PyTorch tensors vs numpy arrays
+- torch.no_grad() for inference (critical!)
+- Device management (CPU/CUDA/MPS)
+- Backend abstraction pattern
+- Adapter pattern for flexibility
+
+PHASE 2: CONFIGURATION SYSTEM
+[ ] Create ModelRegistry for easy model selection
+[ ] Create TrackerRegistry
+[ ] Add config.yaml support
+[ ] Refactor main.py to use config
+
 BETTER UX:
-[ ] Add config.yaml for easy parameter tuning
 [ ] Better logging (less spam, more useful info)
 [ ] Save output video + track data
 [ ] Add FPS counter
 
 FEATURES (from paper):
 [ ] Re-ID support (appearance-based tracking)
-[ ] Keypoint tracking (pose estimation)
+[ ] Keypoint tracking (pose estimation with YOLOv8-pose)
 [ ] MOT metrics (MOTA, MOTP, IDF1)
 
 CODE QUALITY:
