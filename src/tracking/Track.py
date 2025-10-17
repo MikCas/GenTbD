@@ -1,7 +1,7 @@
-from Properties.BoundingBox import BoundingBox
-from Detecting.Detections.ObjectDetection import ObjectDetection as Detection
-from Tracking.Trajectory import Trajectory
-from Tracking.KalmanFilter import KalmanFilter
+from properties.BoundingBox import BoundingBox
+from detecting.detections.ObjectDetection import ObjectDetection as Detection
+from tracking.Trajectory import Trajectory
+from tracking.KalmanFilter import KalmanFilter
 from enum import Enum
 from typing import Any, Optional
 import cv2

@@ -1,4 +1,4 @@
-from Detecting.Detections.Detection import Detection
+from detecting.detections.Detection import Detection
 
 from abc import ABC, abstractmethod
 import cv2

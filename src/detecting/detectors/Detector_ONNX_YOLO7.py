@@ -1,6 +1,6 @@
-from Properties.BoundingBox import BoundingBox
-from Detecting.Detections.ObjectDetection import ObjectDetection as Detection
-from Detecting.Detectors.Detector import Detector 
+from properties.BoundingBox import BoundingBox
+from detecting.detections.ObjectDetection import ObjectDetection as Detection
+from detecting.detectors.Detector import Detector 
 
 from abc import ABC
 import cv2

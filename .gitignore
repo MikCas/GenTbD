@@ -1,19 +1,40 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Project specific
 data/
 models/
 gentbd/
 archive/
 
-*.gitignore
-*.log
-*.tmp
-*.swp
-*.bak
-.DS_Store
-.env
+# IDE
 .vscode/
 .idea/
-*.pyc
-*.pyo
-*.pyd
+*.swp
+*.bak
+
+# OS
+.DS_Store
+
+# Environment
+.env
 *.python-version
+
+# Logs
+*.log
+*.tmp

@@ -1,4 +1,4 @@
-from Properties.BoundingBox import BoundingBox
+from properties.BoundingBox import BoundingBox
 from abc import ABC, abstractmethod
 from typing import Optional
 import cv2

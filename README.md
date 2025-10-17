@@ -158,7 +158,10 @@ GenTbD/
 - Implement keypoint-based tracking for human pose estimation.
 - Introduce weighted sum and gating thresholds for feature fusion.
 
+**Note**: See [LOG.txt](LOG.txt) for development progress and learning guide.
+
 ---
 
 ## License
+
 This project is licensed under the MIT License. See the `LICENSE` file for details.

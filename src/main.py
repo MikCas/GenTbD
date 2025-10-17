@@ -1,6 +1,6 @@
-from Detecting.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
-from Tracking.Trackers.SimpleTracker import SimpleTracker
-from Temporal.VideoProcessor import SimpleVideoProcessor
+from detecting.detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
+from tracking.trackers.SimpleTracker import SimpleTracker
+from temporal.VideoProcessor import SimpleVideoProcessor
 
 import logging
 import os
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     logger = setup_logger()
 
     ##### 3. DETECTOR #####
-    model_path = 'models/yolov7_640x640.onnx'
+    model_path = 'models/yolov7-tiny_640x640.onnx'
     confidence_threshold = 0.1
     iou_threshold = 0.5
     classes = [0]

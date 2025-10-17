@@ -1,5 +1,5 @@
-from Detecting.Detections.Detection import Detection
-from Properties.BoundingBox import BoundingBox
+from detecting.detections.Detection import Detection
+from properties.BoundingBox import BoundingBox
 
 from typing import Optional
 import cv2
