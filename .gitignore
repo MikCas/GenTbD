@@ -22,6 +22,9 @@ models/
 gentbd/
 archive/
 
+# Downloaded YOLO models (from Ultralytics)
+*.pt
+
 # IDE
 .vscode/
 .idea/

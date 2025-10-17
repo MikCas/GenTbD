@@ -1,0 +1,180 @@
+# GenTbD Configuration File
+#
+# This file controls all aspects of the tracking system.
+# To experiment with different models or settings, just edit this file!
+#
+# Learning Point - Configuration-Driven Design:
+#   Instead of hardcoding values in Python files, we put them here.
+#   Benefits:
+#   1. Change models without touching code
+#   2. Easy to experiment (try yolov8n vs yolov8s)
+#   3. Version control your experiments (git diff config.yaml)
+#   4. Non-programmers can configure the system
+
+# ============================================================
+# DETECTOR CONFIGURATION
+# ============================================================
+detector:
+  # Model name from ModelRegistry
+  # Available options:
+  #   PyTorch (auto-download):
+  #     - yolov8n (fastest, 3.2M params)
+  #     - yolov8s (balanced, 11.2M params)
+  #     - yolov8m (accurate, 25.9M params)
+  #     - yolov8l (very accurate, 43.7M params)
+  #     - yolov8x (best, 68.2M params)
+  #   ONNX (requires model file):
+  #     - yolov7-tiny-onnx
+  model: yolov8n
+
+  # Confidence threshold (0.0 - 1.0)
+  # Lower = more detections (but more false positives)
+  # Higher = fewer detections (but fewer false positives)
+  # Good range: 0.2 - 0.5
+  confidence_threshold: 0.3
+
+  # IoU threshold for NMS (0.0 - 1.0)
+  # Lower = more aggressive suppression
+  # Higher = less aggressive suppression
+  # Good range: 0.4 - 0.6
+  iou_threshold: 0.5
+
+  # Classes to detect (list of COCO class IDs)
+  # 0 = person, 2 = car, 3 = motorcycle, etc.
+  # Use null to detect all classes
+  # Example: [0] for person only
+  # Example: [0, 2, 3] for person, car, motorcycle
+  classes: [0]
+
+  # Device to use (optional)
+  # Options: cpu, cuda, mps, null (auto-detect)
+  # Leave as null to auto-detect best device
+  device: null
+
+# ============================================================
+# TRACKER CONFIGURATION
+# ============================================================
+tracker:
+  # Tracker name from TrackerRegistry
+  # Available options:
+  #   - simple (IOU-based, fast)
+  name: simple
+
+  # Maximum frames to keep track without detection
+  # How long to remember "lost" objects
+  # Too low: Tracks lost during brief occlusions
+  # Too high: Ghost tracks persist too long
+  # Good range: 20-50
+  max_age: 30
+
+  # Minimum detections before track is confirmed
+  # Anti-noise filter
+  # Too low: False positives become tracks
+  # Too high: Real objects take long to appear
+  # Good range: 2-5
+  min_hits: 3
+
+  # IoU threshold for matching detections to tracks
+  # How much overlap to consider "same object"
+  # Too low: Same object gets multiple IDs
+  # Too high: Different objects get same ID
+  # Good range: 0.2-0.5
+  iou_threshold: 0.3
+
+# ============================================================
+# VIDEO PROCESSING CONFIGURATION
+# ============================================================
+video:
+  # Input video path
+  # Can be:
+  #   - Local file: data/TownCent.mp4
+  #   - URL: http://example.com/video.mp4
+  #   - Camera: 0 (default webcam)
+  input: data/TownCent.mp4
+
+  # Output video path (optional)
+  # Set to null to not save output
+  # Example: output/result.mp4
+  output: null
+
+  # Display video during processing
+  display: true
+
+  # Maximum frames to process
+  # Set to null to process entire video
+  # Useful for testing: max_frames: 100
+  max_frames: null
+
+  # Skip frames (process every Nth frame)
+  # 1 = process every frame
+  # 2 = process every other frame (faster, less smooth)
+  skip_frames: 1
+
+# ============================================================
+# VISUALIZATION CONFIGURATION
+# ============================================================
+visualization:
+  # Show bounding boxes
+  show_boxes: true
+
+  # Show track IDs
+  show_ids: true
+
+  # Show confidence scores
+  show_confidence: true
+
+  # Show FPS counter
+  show_fps: true
+
+  # Box color (BGR format)
+  # Examples:
+  #   - [0, 255, 0] = green
+  #   - [255, 0, 0] = blue
+  #   - [0, 0, 255] = red
+  box_color: [0, 255, 0]
+
+  # Box thickness (pixels)
+  box_thickness: 2
+
+  # Font scale
+  font_scale: 0.5
+
+# ============================================================
+# LOGGING CONFIGURATION
+# ============================================================
+logging:
+  # Logging level
+  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: INFO
+
+  # Log to file
+  log_file: null  # Set to 'logs/tracking.log' to enable
+
+  # Log format
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# ============================================================
+# EXAMPLE CONFIGURATIONS
+# ============================================================
+# Uncomment one of these to try different setups!
+
+# Fast setup (for testing):
+# detector:
+#   model: yolov8n
+#   confidence_threshold: 0.5
+# tracker:
+#   max_age: 20
+#   min_hits: 2
+
+# Accurate setup (for production):
+# detector:
+#   model: yolov8m
+#   confidence_threshold: 0.4
+# tracker:
+#   max_age: 40
+#   min_hits: 4
+
+# ONNX setup (for deployment):
+# detector:
+#   model: yolov7-tiny-onnx
+#   confidence_threshold: 0.3

@@ -80,11 +80,35 @@ What I learned:
 - Backend abstraction pattern
 - Adapter pattern for flexibility
 
-PHASE 2: CONFIGURATION SYSTEM
-[ ] Create ModelRegistry for easy model selection
-[ ] Create TrackerRegistry
-[ ] Add config.yaml support
-[ ] Refactor main.py to use config
+PHASE 2: CONFIGURATION SYSTEM (COMPLETE!)
+[x] Create ModelRegistry for easy model selection
+    ✓ Factory pattern for detector creation
+    ✓ Supports all YOLO models (yolov8n, yolov8s, yolov8m, yolov8l, yolov8x)
+    ✓ Supports ONNX models (yolov7-tiny-onnx)
+    ✓ Easy model switching: ModelRegistry.create('yolov8n')
+    ✓ register_model() for custom models
+[x] Create TrackerRegistry
+    ✓ Factory pattern for tracker creation
+    ✓ Note: SimpleTracker uses different parameters, needs adaptation
+[x] Add config.yaml support
+    ✓ Comprehensive YAML config file
+    ✓ Detector, tracker, video, visualization, logging sections
+    ✓ Well-documented with examples
+[x] Refactor main.py to use config
+    ✓ Configuration-driven design
+    ✓ python -m src.main uses config.yaml
+    ✓ python -m src.main --config custom.yaml for custom configs
+[x] Test registry system (test_registry.py)
+    ✓ ModelRegistry works perfectly
+    ✓ Auto-downloads models (yolov8s downloaded on first use)
+    ✓ Easy model switching verified
+
+What I learned:
+- Factory pattern for object creation
+- Configuration-driven design
+- YAML for human-friendly configs
+- Registry pattern for extensibility
+- Open/Closed Principle (open for extension, closed for modification)
 
 BETTER UX:
 [ ] Better logging (less spam, more useful info)
