@@ -17,10 +17,9 @@ build/
 *.egg
 
 # Project specific
-data/
-models/
-gentbd/
-archive/
+output_*.mp4
+frame_*.jpg
+*.avi
 
 # IDE
 .vscode/
