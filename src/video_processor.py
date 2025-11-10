@@ -8,6 +8,7 @@ import cv2
 import time
 import logging
 from typing import Optional
+from detecting.properties.bounding_box import BoundingBox
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,6 @@ logger = logging.getLogger(__name__)
 FPS_WINDOW = 30
 TEXT_COLOR = (255, 0, 0)  # BGR blue
 TEXT_FONT = cv2.FONT_HERSHEY_SIMPLEX
-
 
 class VideoProcessor:
     """Processes video with detection, visualization, and interactive controls.
@@ -35,7 +35,8 @@ class VideoProcessor:
     """
 
     def __init__(self, video_path: str, detector, save_output: bool = False,
-                 output_path: Optional[str] = None):
+                 output_path: Optional[str] = None, max_dimension: Optional[int] = None,
+                 skip_frames: int = 1):
         """Initialize video processor.
 
         Args:
@@ -43,11 +44,15 @@ class VideoProcessor:
             detector: Detector instance (e.g., ObjectDetector)
             save_output: Whether to save processed video
             output_path: Output video path (auto-generated if None)
+            max_dimension: Resize frames to this max dimension before detection (None = no resize)
+            skip_frames: Process every Nth frame (1 = all frames, 5 = every 5th)
         """
         self.video_path = video_path
         self.detector = detector
         self.save_output = save_output
         self.output_path = output_path
+        self.max_dimension = max_dimension
+        self.skip_frames = max(1, skip_frames)
 
         # Video resources
         self.cap = None
@@ -100,7 +105,13 @@ class VideoProcessor:
             logger.info(f"Saving to: {self.output_path}")
 
     def _process_loop(self):
-        """Main processing loop - read frames, detect, visualize, handle input."""
+        """Main processing loop - read frames, detect, visualize, handle input.
+
+        When skip_frames > 1, we cache the rendered frame and reuse it for skipped frames.
+        This ensures bounding boxes match the frame they were detected on.
+        """
+        cached_display_frame = None  # Cache rendered frame when skipping
+
         while True:
             ret, frame = self.cap.read()
             if not ret:
@@ -108,38 +119,121 @@ class VideoProcessor:
 
             self.frame_num += 1
 
-            # Run detection
-            detections, elapsed = self._process_frame(frame)
-            self.fps_list.append(1.0 / elapsed if elapsed > 0 else 0)
+            # Determine if we should run detection on this frame
+            should_detect = (self.frame_num - 1) % self.skip_frames == 0
 
-            # Draw overlay
-            self._draw_overlay(frame, detections)
+            if should_detect:
+                # Run detection and render frame
+                detections, elapsed = self._detect_objects(frame)
+                self.fps_list.append(1.0 / elapsed if elapsed > 0 else 0)
+
+                # Render boxes and overlay on frame
+                self._render_detections(frame, detections)
+                self._draw_overlay(frame, detections)
+
+                # Cache this rendered frame for skip frames
+                cached_display_frame = frame.copy()
+                display_frame = frame
+            else:
+                # Reuse cached rendered frame (boxes match the detection frame)
+                display_frame = cached_display_frame if cached_display_frame is not None else frame
 
             # Display and save
-            cv2.imshow('Video Tracking', frame)
+            cv2.imshow('Video Tracking', display_frame)
             if self.out:
-                self.out.write(frame)
+                self.out.write(display_frame)
 
             # Handle keyboard input
             wait_time = 1 if self.continuous_mode else 0
             key = cv2.waitKey(wait_time) & 0xFF
-            if self._handle_keyboard(key, frame):
+            if self._handle_keyboard(key, display_frame):
                 break  # Quit requested
 
-    def _process_frame(self, frame):
-        """Run detection on frame. Returns (detections, elapsed_time)."""
+    def _detect_objects(self, frame):
+        """Run object detection on frame.
+
+        Handles frame resizing and bounding box scaling automatically.
+
+        Args:
+            frame: Input frame (will not be modified)
+
+        Returns:
+            Tuple of (detections, elapsed_time)
+        """
         start_time = time.time()
-
         detections = []
-        if self.detector:
-            detections = self.detector.detect(frame)
 
-            # Draw bounding boxes
-            for det in detections:
-                det['bbox'].draw(frame, color=(0, 255, 0))
+        if not self.detector:
+            return detections, time.time() - start_time
+
+        # Resize frame for detection if requested
+        detection_frame, scale_factor = self._prepare_detection_frame(frame)
+
+        # Run detection on prepared frame
+        detections = self.detector.detect(detection_frame)
+
+        # Scale bounding boxes back to original size if needed
+        if scale_factor != 1.0:
+            detections = self._scale_detections(detections, scale_factor)
 
         elapsed = time.time() - start_time
         return detections, elapsed
+
+    def _prepare_detection_frame(self, frame):
+        """Prepare frame for detection by resizing if needed.
+
+        Args:
+            frame: Original frame
+
+        Returns:
+            Tuple of (detection_frame, scale_factor)
+        """
+        if not self.max_dimension:
+            return frame, 1.0
+
+        h, w = frame.shape[:2]
+        max_dim = max(h, w)
+
+        if max_dim <= self.max_dimension:
+            return frame, 1.0
+
+        # Calculate scale factor and resize
+        scale_factor = self.max_dimension / max_dim
+        new_w = int(w * scale_factor)
+        new_h = int(h * scale_factor)
+        detection_frame = cv2.resize(frame, (new_w, new_h))
+
+        return detection_frame, scale_factor
+
+    def _scale_detections(self, detections, scale_factor):
+        """Scale detection bounding boxes from detection resolution to original resolution.
+
+        Args:
+            detections: List of Detection objects
+            scale_factor: Factor used to resize frame (target_size / original_size)
+
+        Returns:
+            List of Detection objects with scaled bounding boxes
+        """
+        for det in detections:
+            x1, y1, x2, y2 = det['bbox'].xyxy
+            det['bbox'] = BoundingBox(
+                x1 / scale_factor,
+                y1 / scale_factor,
+                x2 / scale_factor,
+                y2 / scale_factor
+            )
+        return detections
+
+    def _render_detections(self, frame, detections):
+        """Render detection bounding boxes on frame.
+
+        Args:
+            frame: Frame to draw on (will be modified in-place)
+            detections: List of Detection objects to render
+        """
+        for det in detections:
+            det['bbox'].draw(frame, color=(0, 255, 0))
 
     def _draw_overlay(self, frame, detections):
         """Draw FPS, frame info, mode, and detection count on frame."""

@@ -13,8 +13,8 @@ Controls:
 
 import argparse
 import logging
-from .video_processor import VideoProcessor
-from .detecting.detectors import ObjectDetector
+from video_processor import VideoProcessor
+from detecting.detectors import ObjectDetector
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,14 @@ def setup_arguments():
                        help='Detection confidence threshold (0.0-1.0)')
     parser.add_argument('--device', default='cpu',
                        help='Device for detection: cpu, mps, or cuda')
+    parser.add_argument('--model', default='resnet50', choices=['resnet50', 'mobilenet', 'retinanet'],
+                       help='Detection model: resnet50 (accurate), mobilenet (fast), retinanet')
     parser.add_argument('--classes', type=int, nargs='+', default=None,
                        help='Filter by class IDs (e.g., --classes 1 for people only)')
+    parser.add_argument('--max-dimension', type=int, default=None,
+                       help='Resize frames to max dimension before detection (e.g., 640 for speed)')
+    parser.add_argument('--skip-frames', type=int, default=1,
+                       help='Process every Nth frame (1=all frames, 5=every 5th frame)')
     parser.add_argument('--save-output', action='store_true',
                        help='Save output video')
     parser.add_argument('--output', default=None,
@@ -54,14 +60,30 @@ def main():
     args = setup_arguments()
     setup_logging(args.verbose)
 
-    # Load detector
-    logger.info("Loading FasterRCNN detector...")
+    # Load detector based on model choice
+    logger.info(f"Loading {args.model} detector...")
     try:
-        detector = ObjectDetector.from_fasterrcnn_resnet50(
-            device=args.device,
-            conf_threshold=args.conf,
-            classes=args.classes
-        )
+        if args.model == 'resnet50':
+            detector = ObjectDetector.from_fasterrcnn_resnet50(
+                device=args.device,
+                conf_threshold=args.conf,
+                classes=args.classes
+            )
+        elif args.model == 'mobilenet':
+            detector = ObjectDetector.from_mobilenet(
+                device=args.device,
+                conf_threshold=args.conf,
+                classes=args.classes
+            )
+        elif args.model == 'retinanet':
+            detector = ObjectDetector.from_retinanet(
+                device=args.device,
+                conf_threshold=args.conf,
+                classes=args.classes
+            )
+        else:
+            logger.error(f"Unknown model: {args.model}")
+            return
         logger.info(f"Detector loaded on device: {args.device}")
     except Exception as e:
         logger.error(f"Failed to load detector: {e}")
@@ -73,7 +95,9 @@ def main():
             video_path=args.video,
             detector=detector,
             save_output=args.save_output,
-            output_path=args.output
+            output_path=args.output,
+            max_dimension=args.max_dimension,
+            skip_frames=args.skip_frames
         )
         processor.run()
     except ValueError as e:

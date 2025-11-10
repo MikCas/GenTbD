@@ -21,7 +21,7 @@ class ObjectDetector(Detector):
         """Load pretrained FasterRCNN model.
 
         Args:
-            device: 'cpu' or 'cuda'
+            device: 'cpu', 'mps' or 'cuda'
             conf_threshold: Minimum confidence for detections
             classes: List of class IDs to filter (None = all classes)
 
@@ -39,7 +39,7 @@ class ObjectDetector(Detector):
         """Load pretrained RetinaNet model.
 
         Args:
-            device: 'cpu' or 'cuda'
+            device: 'cpu', 'mps' or 'cuda'
             conf_threshold: Minimum confidence for detections
             classes: List of class IDs to filter (None = all classes)
 
@@ -47,6 +47,23 @@ class ObjectDetector(Detector):
             ObjectDetector instance
         """
         model = retinanet_resnet50_fpn(weights='DEFAULT')
+        detector = cls(model, device, conf_threshold)
+        detector.classes = classes
+        return detector
+
+    @classmethod
+    def from_mobilenet(cls, device='cpu', conf_threshold=0.5, classes=None):
+        """Load pretrained FasterRCNN MobileNetV3 model (lightweight, ~10-20x faster).
+
+        Args:
+            device: 'cpu', 'mps' or 'cuda'
+            conf_threshold: Minimum confidence for detections
+            classes: List of class IDs to filter (None = all classes)
+
+        Returns:
+            ObjectDetector instance
+        """
+        model = fasterrcnn_mobilenet_v3_large_fpn(weights='DEFAULT')
         detector = cls(model, device, conf_threshold)
         detector.classes = classes
         return detector 

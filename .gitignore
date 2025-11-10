@@ -37,3 +37,12 @@ frame_*.jpg
 # Logs
 *.log
 *.tmp
+
+# Data directories
+data/
+ARCHIVE/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
