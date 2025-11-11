@@ -1,0 +1,34 @@
+# GenTbD Default Configuration
+
+# Video source settings
+video:
+  source: "data/TownCent.mp4"  # Path to video file, camera index (0, 1), or RTSP URL
+  max_dimension: null          # Resize frames to max dimension (null = no resize)
+  skip_frames: 1               # Process every Nth frame (1 = all frames)
+  save_output: false           # Save processed video
+  output_path: null            # Output path (null = auto-generate)
+
+# Detection settings
+detection:
+  model: "mobilenet"           # Model: resnet50, mobilenet, retinanet
+  device: "cpu"                # Device: cpu, mps, cuda
+  conf_threshold: 0.5          # Confidence threshold (0.0-1.0)
+  classes: null                # Filter classes (null = all, [1] = people only)
+
+# Tracking settings (for future implementation)
+tracking:
+  enabled: false               # Enable tracking
+  tracker_type: "bytetrack"    # Tracker: bytetrack, sort, deepsort
+  max_age: 30                  # Frames to keep lost tracks
+  min_hits: 3                  # Minimum detections before track confirmed
+  iou_threshold: 0.3           # IoU threshold for matching
+
+  # ReID settings
+  reid:
+    enabled: false             # Enable ReID feature matching
+    model: null                # ReID model path (null = use default)
+    weight: 0.5                # ReID weight vs IoU (0.0-1.0)
+
+# Logging
+logging:
+  verbose: false               # Enable verbose logging

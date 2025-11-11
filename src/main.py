@@ -15,6 +15,7 @@ import argparse
 import logging
 from .video_processor import VideoProcessor
 from .detecting.detectors import ObjectDetector
+from .config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,10 @@ def setup_arguments():
         description='Video detection processor',
         epilog='Controls: c=toggle mode | SPACE=next frame | s=save frame | q=quit'
     )
+    # Configuration file
+    parser.add_argument('--config', type=str, default=None,
+                       help='Path to YAML config file (default: config/default.yaml)')
+
     # Video source arguments (mutually exclusive: video file or webcam)
     source_group = parser.add_mutually_exclusive_group()
     source_group.add_argument('--video', type=str, default=None,
@@ -67,33 +72,52 @@ def setup_logging(verbose):
 def main():
     """Main entry point for video processing with detection."""
     args = setup_arguments()
-    setup_logging(args.verbose)
 
-    # Determine video source (webcam or video file)
-    if args.webcam is not None:
-        source = args.webcam  # Camera index (0, 1, etc.)
-        logger.info(f"Using webcam (camera index: {source})")
-    elif args.video:
-        source = args.video
-        logger.info(f"Using video file: {source}")
+    # Load configuration (config file + command-line args)
+    if args.config:
+        config = Config.from_yaml(args.config)
+        logger.info(f"Loaded config from: {args.config}")
     else:
-        # Default to TownCent.mp4 if no source specified
-        source = 'data/TownCent.mp4'
-        logger.info(f"Using default video: {source}")
+        config = Config.from_default()
+        logger.info("Using default configuration")
+
+    # Merge command-line arguments (they take precedence)
+    config.merge_args(args)
+
+    # Setup logging
+    verbose = config.get('logging.verbose', False)
+    setup_logging(verbose)
+
+    # Get configuration values
+    source = config.get('video.source', 'data/TownCent.mp4')
+    model = config.get('detection.model', 'mobilenet')
+    device = config.get('detection.device', 'cpu')
+    conf_threshold = config.get('detection.conf_threshold', 0.5)
+    classes = config.get('detection.classes', None)
+    max_dimension = config.get('video.max_dimension', None)
+    skip_frames = config.get('video.skip_frames', 1)
+    save_output = config.get('video.save_output', False)
+    output_path = config.get('video.output_path', None)
+
+    # Log source
+    if isinstance(source, int):
+        logger.info(f"Using webcam (camera index: {source})")
+    else:
+        logger.info(f"Using video source: {source}")
 
     # Setup detector
-    logger.info(f"Loading {args.model} detector...")
+    logger.info(f"Loading {model} detector...")
     try:
         detector = ObjectDetector(
-            model=args.model,
-            device=args.device,
-            conf_threshold=args.conf,
-            classes=args.classes
+            model=model,
+            device=device,
+            conf_threshold=conf_threshold,
+            classes=classes
         )
-        if args.classes:
-            logger.info(f"Detector loaded on device: {args.device}, filtering classes: {args.classes}")
+        if classes:
+            logger.info(f"Detector loaded on device: {device}, filtering classes: {classes}")
         else:
-            logger.info(f"Detector loaded on device: {args.device}")
+            logger.info(f"Detector loaded on device: {device}")
     except Exception as e:
         logger.error(f"Failed to load detector: {e}")
         return
@@ -103,10 +127,10 @@ def main():
         processor = VideoProcessor(
             source=source,
             detector=detector,
-            save_output=args.save_output,
-            output_path=args.output,
-            max_dimension=args.max_dimension,
-            skip_frames=args.skip_frames
+            save_output=save_output,
+            output_path=output_path,
+            max_dimension=max_dimension,
+            skip_frames=skip_frames
         )
         processor.run()
     except ValueError as e:
