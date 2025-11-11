@@ -23,4 +23,4 @@ All notable changes to this project will be documented in this file.
 - Factory methods for easy detector instantiation
 - Support for custom detector implementations
 
-[0.1.0]: https://github.com/your-username/GenTbD/releases/tag/v0.1.0
+[0.1.0]: https://github.com/mikhailcassar/GenTbD/releases/tag/v0.1.0

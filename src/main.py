@@ -18,7 +18,6 @@ from detecting.detectors import ObjectDetector
 
 logger = logging.getLogger(__name__)
 
-
 def setup_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(

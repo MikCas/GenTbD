@@ -38,10 +38,10 @@
 
 ```bash
 # Basic usage (CPU, default settings)
-python -m src.process_video --video data/TownCent.mp4
+python -m src.main --video data/TownCent.mp4
 
 # With custom settings
-python -m src.process_video \
+python -m src.main \
     --video data/your_video.mp4 \
     --conf 0.7 \
     --device mps \
@@ -75,7 +75,7 @@ GenTbD/
 ├── data/                          # Input videos
 │   └── TownCent.mp4
 ├── src/                           # Source code
-│   ├── process_video.py           # Main entry point
+│   ├── main.py                    # Main entry point
 │   ├── video_processor.py         # VideoProcessor class
 │   └── detecting/                 # Detection system
 │       ├── detector.py            # Base Detector ABC

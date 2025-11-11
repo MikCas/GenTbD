@@ -42,6 +42,11 @@ frame_*.jpg
 data/
 ARCHIVE/
 
+# Experiments
+experiments/*.json
+experiments/*.csv
+experiments/*.png
+
 # Testing
 .coverage
 .pytest_cache/

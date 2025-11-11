@@ -2,6 +2,16 @@
 # det.get('key', default) - Safe access, returns default if missing
 
 class Detection:
+    """Dictionary-like container for detection properties.
+
+    Stores detection information such as bounding boxes, class IDs, confidences,
+    and other attributes in a flexible key-value structure.
+
+    Usage:
+        det = Detection({'bbox': BoundingBox(...), 'class_id': 1, 'confidence': 0.95})
+        bbox = det['bbox']  # Strict access
+        score = det.get('confidence', 0.0)  # Safe access with default
+    """
 
     def __init__(self, properties=None):
         self._props = properties if properties is not None else {}
