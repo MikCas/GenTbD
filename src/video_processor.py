@@ -11,9 +11,13 @@ import os
 from datetime import datetime
 from typing import Optional
 from detecting.properties.bounding_box import BoundingBox
-from ui.video_ui import VideoUI
 
 logger = logging.getLogger(__name__)
+
+# UI Constants
+FPS_WINDOW = 30
+TEXT_COLOR = (255, 0, 0)  # BGR blue
+TEXT_FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 
 class VideoProcessor:
@@ -35,7 +39,7 @@ class VideoProcessor:
 
     def __init__(self, video_path: str, detector, save_output: bool = False,
                  output_path: Optional[str] = None, max_dimension: Optional[int] = None,
-                 skip_frames: int = 1, ui: Optional[VideoUI] = None):
+                 skip_frames: int = 1):
         """Initialize video processor.
 
         Args:
@@ -45,7 +49,6 @@ class VideoProcessor:
             output_path: Output video path (auto-generated if None)
             max_dimension: Resize frames to this max dimension before detection (None = no resize)
             skip_frames: Process every Nth frame (1 = all frames, 5 = every 5th)
-            ui: UI instance for display (None = create default VideoUI)
         """
         self.video_path = video_path
         self.detector = detector
@@ -54,9 +57,6 @@ class VideoProcessor:
         self.max_dimension = max_dimension
         self.skip_frames = max(1, skip_frames)
 
-        # UI layer (swappable)
-        self.ui = ui if ui is not None else VideoUI()
-
         # Video resources
         self.cap = None
         self.out = None
@@ -64,6 +64,9 @@ class VideoProcessor:
 
         # State
         self.frame_num = 0
+        self.continuous_mode = False
+        self.fps_samples = []
+        self.window_name = 'Video Tracking'
 
     def run(self):
         """Main processing loop. Sets up video, processes frames, and cleans up."""
@@ -123,11 +126,11 @@ class VideoProcessor:
             if should_detect:
                 # Run detection and render frame
                 detections, elapsed = self._detect_objects(frame)
-                self.ui.add_fps_sample(1.0 / elapsed if elapsed > 0 else 0)
+                self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
 
                 # Render boxes and overlay on frame
                 self._render_detections(frame, detections)
-                self.ui.draw_overlay(frame, self.frame_num, self.props['total_frames'], detections)
+                self._render_overlay(frame, detections)
 
                 # Cache this rendered frame for skip frames
                 cached_display_frame = frame.copy()
@@ -137,14 +140,12 @@ class VideoProcessor:
                 display_frame = cached_display_frame if cached_display_frame is not None else frame
 
             # Display and save
-            self.ui.show_frame(display_frame)
+            self._show_frame(display_frame)
             if self.out:
                 self.out.write(display_frame)
 
             # Handle keyboard input
-            key = self.ui.wait_for_input()
-            action = self.ui.handle_key(key, display_frame)
-            if action == 'quit':
+            if self._handle_input(display_frame):
                 break
 
     # =========================================================================
@@ -232,7 +233,7 @@ class VideoProcessor:
         return detections
 
     # =========================================================================
-    # Rendering
+    # VISUALIZATION (centralized for detections, tracks, keypoints)
     # =========================================================================
 
     def _render_detections(self, frame, detections):
@@ -245,8 +246,91 @@ class VideoProcessor:
         for det in detections:
             det['bbox'].draw(frame, color=(0, 255, 0))
 
+    def _render_tracks(self, frame, tracks):
+        """Render tracking IDs and trajectories on frame.
+
+        Args:
+            frame: Frame to draw on (will be modified in-place)
+            tracks: List of Track objects to render
+
+        Future placeholder for tracking visualization.
+        """
+        pass
+
+    def _render_keypoints(self, frame, keypoints):
+        """Render pose keypoints and skeleton on frame.
+
+        Args:
+            frame: Frame to draw on (will be modified in-place)
+            keypoints: List of Keypoint objects to render
+
+        Future placeholder for keypoint visualization.
+        """
+        pass
+
+    def _render_overlay(self, frame, detections):
+        """Draw text overlay (FPS, frame info, mode, detection count) on frame.
+
+        Args:
+            frame: Frame to draw on (will be modified in-place)
+            detections: List of detections (for counting)
+        """
+        # Calculate rolling average FPS
+        recent_fps = self.fps_samples[-FPS_WINDOW:] if self.fps_samples else [0]
+        avg_fps = sum(recent_fps) / len(recent_fps)
+
+        mode = "CONTINUOUS" if self.continuous_mode else "STEP"
+
+        # Draw text overlay
+        cv2.putText(frame, f"FPS: {avg_fps:.1f}", (10, 30),
+                   TEXT_FONT, 1, TEXT_COLOR, 2)
+        cv2.putText(frame, f"Frame: {self.frame_num}/{self.props['total_frames']}",
+                   (10, 70), TEXT_FONT, 1, TEXT_COLOR, 2)
+        cv2.putText(frame, f"Mode: {mode}", (10, 110),
+                   TEXT_FONT, 1, TEXT_COLOR, 2)
+        if len(detections) > 0:
+            cv2.putText(frame, f"Detections: {len(detections)}",
+                       (10, 150), TEXT_FONT, 1, TEXT_COLOR, 2)
+
     # =========================================================================
-    # Cleanup
+    # USER INTERACTION
+    # =========================================================================
+
+    def _show_frame(self, frame):
+        """Display frame in window.
+
+        Args:
+            frame: Frame to display
+        """
+        cv2.imshow(self.window_name, frame)
+
+    def _handle_input(self, frame) -> bool:
+        """Handle keyboard input.
+
+        Args:
+            frame: Current frame (for saving if 's' pressed)
+
+        Returns:
+            True if should quit, False otherwise
+        """
+        wait_time = 1 if self.continuous_mode else 0
+        key = cv2.waitKey(wait_time) & 0xFF
+
+        if key == ord('q'):
+            return True
+        elif key == ord('c'):
+            self.continuous_mode = not self.continuous_mode
+            mode = "CONTINUOUS" if self.continuous_mode else "STEP"
+            logger.info(f"Mode: {mode}")
+        elif key == ord('s'):
+            filename = f"frame_{int(time.time())}.jpg"
+            cv2.imwrite(filename, frame)
+            logger.info(f"Saved {filename}")
+
+        return False
+
+    # =========================================================================
+    # CLEANUP
     # =========================================================================
 
     def _cleanup(self):
@@ -256,9 +340,9 @@ class VideoProcessor:
         if self.out:
             self.out.release()
 
-        # Clean up UI
-        self.ui.cleanup()
+        # Clean up display window
+        cv2.destroyAllWindows()
 
         # Print summary
-        avg_fps = self.ui.get_average_fps()
+        avg_fps = sum(self.fps_samples) / len(self.fps_samples) if self.fps_samples else 0.0
         logger.info(f"Processed {self.frame_num} frames @ {avg_fps:.1f} FPS average")
