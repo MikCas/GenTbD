@@ -36,20 +36,20 @@ class VideoProcessor:
     - 'q': Quit
     """
 
-    def __init__(self, video_path: str, detector, save_output: bool = False,
+    def __init__(self, source: str, detector, save_output: bool = False,
                  output_path: Optional[str] = None, max_dimension: Optional[int] = None,
                  skip_frames: int = 1):
         """Initialize video processor.
 
         Args:
-            video_path: Path to input video file
+            source: Path to video file, camera index (0, 1, etc.), or RTSP URL
             detector: Detector instance (e.g., ObjectDetector)
             save_output: Whether to save processed video
             output_path: Output video path (auto-generated if None)
             max_dimension: Resize frames to this max dimension before detection (None = no resize)
             skip_frames: Process every Nth frame (1 = all frames, 5 = every 5th)
         """
-        self.video_path = video_path
+        self.source = source
         self.detector = detector
         self.save_output = save_output
         self.output_path = output_path
@@ -85,12 +85,21 @@ class VideoProcessor:
 
     def _setup_video(self):
         """Setup video capture and optional output writer."""
-        if not os.path.exists(self.video_path):
-            raise ValueError(f"Video file not found: {self.video_path}")
+        # Handle different source types (file path, camera index, RTSP URL)
+        if isinstance(self.source, int):
+            # Camera index (0, 1, etc.)
+            self.cap = cv2.VideoCapture(self.source)
+        elif self.source.startswith(('rtsp://', 'http://', 'https://')):
+            # RTSP or HTTP stream
+            self.cap = cv2.VideoCapture(self.source)
+        else:
+            # File path - check if it exists
+            if not os.path.exists(self.source):
+                raise ValueError(f"Video file not found: {self.source}")
+            self.cap = cv2.VideoCapture(self.source)
 
-        self.cap = cv2.VideoCapture(self.video_path)
         if not self.cap.isOpened():
-            raise ValueError(f"Cannot open video: {self.video_path}")
+            raise ValueError(f"Cannot open video source: {self.source}")
 
         # Get video properties
         self.video_fps = self.cap.get(cv2.CAP_PROP_FPS)

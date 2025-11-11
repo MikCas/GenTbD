@@ -24,9 +24,14 @@ def setup_arguments():
         description='Video detection processor',
         epilog='Controls: c=toggle mode | SPACE=next frame | s=save frame | q=quit'
     )
+    # Video source arguments (mutually exclusive: video file or webcam)
+    source_group = parser.add_mutually_exclusive_group()
+    source_group.add_argument('--video', type=str, default=None,
+                             help='Path to input video file')
+    source_group.add_argument('--webcam', type=int, nargs='?', const=0, default=None,
+                             help='Use webcam as input (optionally specify camera index, default: 0)')
+
     # Video processor arguments
-    parser.add_argument('--video', default='data/TownCent.mp4',
-                       help='Path to input video')
     parser.add_argument('--max-dimension', type=int, default=None,
                        help='Resize frames to max dimension before detection (e.g., 640 for speed)')
     parser.add_argument('--skip-frames', type=int, default=1,
@@ -64,6 +69,18 @@ def main():
     args = setup_arguments()
     setup_logging(args.verbose)
 
+    # Determine video source (webcam or video file)
+    if args.webcam is not None:
+        source = args.webcam  # Camera index (0, 1, etc.)
+        logger.info(f"Using webcam (camera index: {source})")
+    elif args.video:
+        source = args.video
+        logger.info(f"Using video file: {source}")
+    else:
+        # Default to TownCent.mp4 if no source specified
+        source = 'data/TownCent.mp4'
+        logger.info(f"Using default video: {source}")
+
     # Setup detector
     logger.info(f"Loading {args.model} detector...")
     try:
@@ -84,7 +101,7 @@ def main():
     # Setup and run video processor
     try:
         processor = VideoProcessor(
-            video_path=args.video,
+            source=source,
             detector=detector,
             save_output=args.save_output,
             output_path=args.output,

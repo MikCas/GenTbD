@@ -22,9 +22,9 @@ class TestVideoProcessor:
     def processor(self, mock_detector, tmp_path):
         """Create a VideoProcessor instance for testing."""
         # Use a dummy path since we won't actually run the video
-        video_path = str(tmp_path / "dummy.mp4")
+        source = str(tmp_path / "dummy.mp4")
         return VideoProcessor(
-            video_path=video_path,
+            source=source,
             detector=mock_detector,
             max_dimension=640,
             skip_frames=3
@@ -62,7 +62,7 @@ class TestVideoProcessor:
     def test_scale_frame_no_max_dimension(self, mock_detector, tmp_path):
         """Test frame scaling without max_dimension set."""
         processor = VideoProcessor(
-            video_path=str(tmp_path / "dummy.mp4"),
+            source=str(tmp_path / "dummy.mp4"),
             detector=mock_detector,
             max_dimension=None  # No resizing
         )
@@ -129,3 +129,11 @@ class TestVideoProcessor:
 
         proc3 = VideoProcessor(str(tmp_path / "dummy.mp4"), mock_detector, skip_frames=-5)
         assert proc3.skip_frames == 1
+
+    def test_webcam_source(self, mock_detector):
+        """Test VideoProcessor accepts camera index as source."""
+        processor = VideoProcessor(
+            source=0,  # Camera index
+            detector=mock_detector
+        )
+        assert processor.source == 0
