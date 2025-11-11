@@ -2,10 +2,9 @@ import torch
 import numpy as np
 from typing import List, Optional
 from torchvision.models.detection import (
-    fasterrcnn_resnet50_fpn, 
-    fasterrcnn_mobilenet_v3_large_fpn, 
-    retinanet_resnet50_fpn, 
-    ssd300_vgg16,
+    fasterrcnn_resnet50_fpn,
+    fasterrcnn_mobilenet_v3_large_fpn,
+    retinanet_resnet50_fpn,
 )
 import cv2
 from ..detector import Detector
@@ -17,8 +16,25 @@ class ObjectDetector(Detector):
     """FasterRCNN-based object detector for COCO classes."""
 
     @classmethod
+    def _from_model(cls, model, device='cpu', conf_threshold=0.5, classes=None):
+        """Internal helper to create detector from a loaded model.
+
+        Args:
+            model: Loaded torchvision detection model
+            device: 'cpu', 'mps' or 'cuda'
+            conf_threshold: Minimum confidence for detections
+            classes: List of class IDs to filter (None = all classes)
+
+        Returns:
+            ObjectDetector instance
+        """
+        detector = cls(model, device, conf_threshold)
+        detector.classes = classes
+        return detector
+
+    @classmethod
     def from_fasterrcnn_resnet50(cls, device='cpu', conf_threshold=0.5, classes=None):
-        """Load pretrained FasterRCNN model.
+        """Load pretrained FasterRCNN ResNet50 model.
 
         Args:
             device: 'cpu', 'mps' or 'cuda'
@@ -28,15 +44,12 @@ class ObjectDetector(Detector):
         Returns:
             ObjectDetector instance
         """
-
         model = fasterrcnn_resnet50_fpn(weights='DEFAULT')
-        detector = cls(model, device, conf_threshold)
-        detector.classes = classes
-        return detector
-    
+        return cls._from_model(model, device, conf_threshold, classes)
+
     @classmethod
     def from_retinanet(cls, device='cpu', conf_threshold=0.5, classes=None):
-        """Load pretrained RetinaNet model.
+        """Load pretrained RetinaNet ResNet50 model.
 
         Args:
             device: 'cpu', 'mps' or 'cuda'
@@ -47,9 +60,7 @@ class ObjectDetector(Detector):
             ObjectDetector instance
         """
         model = retinanet_resnet50_fpn(weights='DEFAULT')
-        detector = cls(model, device, conf_threshold)
-        detector.classes = classes
-        return detector
+        return cls._from_model(model, device, conf_threshold, classes)
 
     @classmethod
     def from_mobilenet(cls, device='cpu', conf_threshold=0.5, classes=None):
@@ -64,9 +75,7 @@ class ObjectDetector(Detector):
             ObjectDetector instance
         """
         model = fasterrcnn_mobilenet_v3_large_fpn(weights='DEFAULT')
-        detector = cls(model, device, conf_threshold)
-        detector.classes = classes
-        return detector 
+        return cls._from_model(model, device, conf_threshold, classes) 
 
     def preprocess(self, image: np.ndarray) -> torch.Tensor:
         """Convert BGR image to RGB tensor normalized to [0, 1].

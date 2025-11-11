@@ -35,7 +35,8 @@ class TestVideoProcessor:
         assert processor.max_dimension == 640
         assert processor.skip_frames == 3
         assert processor.frame_num == 0
-        assert processor.continuous_mode == False
+        assert processor.ui is not None
+        assert processor.ui.continuous_mode == False
 
     def test_prepare_detection_frame_no_resize(self, processor):
         """Test frame preparation when no resize is needed."""
