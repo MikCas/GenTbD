@@ -39,28 +39,28 @@ class TestVideoProcessor:
         assert processor.fps_samples == []
         assert processor.window_name == 'Video Tracking'
 
-    def test_prepare_detection_frame_no_resize(self, processor):
-        """Test frame preparation when no resize is needed."""
+    def test_scale_frame_no_resize(self, processor):
+        """Test frame scaling when no resize is needed."""
         # Small frame that doesn't need resizing
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        detection_frame, scale_factor = processor._prepare_detection_frame(frame)
+        scaled_frame, scale_factor = processor._scale_frame(frame)
 
-        assert detection_frame.shape == frame.shape
+        assert scaled_frame.shape == frame.shape
         assert scale_factor == 1.0
 
-    def test_prepare_detection_frame_with_resize(self, processor):
-        """Test frame preparation with resizing."""
+    def test_scale_frame_with_resize(self, processor):
+        """Test frame scaling with resizing."""
         # Large frame that needs resizing
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        detection_frame, scale_factor = processor._prepare_detection_frame(frame)
+        scaled_frame, scale_factor = processor._scale_frame(frame)
 
         # Should be resized to max_dimension=640
-        assert detection_frame.shape[1] == 640  # width
-        assert detection_frame.shape[0] == 360  # height (proportional)
+        assert scaled_frame.shape[1] == 640  # width
+        assert scaled_frame.shape[0] == 360  # height (proportional)
         assert abs(scale_factor - 640/1920) < 0.001
 
-    def test_prepare_detection_frame_no_max_dimension(self, mock_detector, tmp_path):
-        """Test frame preparation without max_dimension set."""
+    def test_scale_frame_no_max_dimension(self, mock_detector, tmp_path):
+        """Test frame scaling without max_dimension set."""
         processor = VideoProcessor(
             video_path=str(tmp_path / "dummy.mp4"),
             detector=mock_detector,
@@ -68,13 +68,13 @@ class TestVideoProcessor:
         )
 
         frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        detection_frame, scale_factor = processor._prepare_detection_frame(frame)
+        scaled_frame, scale_factor = processor._scale_frame(frame)
 
-        assert detection_frame.shape == frame.shape
+        assert scaled_frame.shape == frame.shape
         assert scale_factor == 1.0
 
     def test_scale_detections(self, processor):
-        """Test scaling detection bounding boxes."""
+        """Test scaling detection bounding boxes using bbox.scale()."""
         # Create mock detections
         det1 = Detection({'bbox': BoundingBox(100, 50, 200, 150)})
         det2 = Detection({'bbox': BoundingBox(300, 100, 400, 200)})
@@ -84,7 +84,7 @@ class TestVideoProcessor:
         scale_factor = 0.5
         scaled = processor._scale_detections(detections, scale_factor)
 
-        # Check first detection scaled correctly
+        # Check first detection scaled correctly (using bbox.scale())
         x1, y1, x2, y2 = scaled[0]['bbox'].xyxy
         assert x1 == 200.0  # 100 / 0.5
         assert y1 == 100.0  # 50 / 0.5
@@ -98,8 +98,8 @@ class TestVideoProcessor:
         assert x2 == 800.0  # 400 / 0.5
         assert y2 == 400.0  # 200 / 0.5
 
-    def test_render_detections(self, processor):
-        """Test rendering detections on frame."""
+    def test_render_frame(self, processor):
+        """Test rendering all visualizations on frame."""
         # Create a test frame
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
 
@@ -109,26 +109,13 @@ class TestVideoProcessor:
         det = Detection({'bbox': mock_bbox})
         detections = [det]
 
-        # Render detections
-        processor._render_detections(frame, detections)
+        # Render frame
+        processor._render_frame(frame, detections)
 
         # Verify draw was called
         mock_bbox.draw.assert_called_once()
         call_args = mock_bbox.draw.call_args
         assert call_args[0][0] is frame  # First arg should be the frame
-
-    def test_detect_objects_with_no_detector(self, tmp_path):
-        """Test detection with no detector returns empty list."""
-        processor = VideoProcessor(
-            video_path=str(tmp_path / "dummy.mp4"),
-            detector=None
-        )
-
-        frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        detections, elapsed = processor._detect_objects(frame)
-
-        assert detections == []
-        assert elapsed >= 0
 
     def test_skip_frames_parameter(self, mock_detector, tmp_path):
         """Test skip_frames parameter is enforced to be >= 1."""

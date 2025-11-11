@@ -88,3 +88,30 @@ class TestBoundingBox:
         assert y1_new == 400.0
         assert x2_new == 600.0
         assert y2_new == 800.0
+
+    def test_scale_method(self):
+        """Test BoundingBox.scale() method."""
+        bbox = BoundingBox(10, 20, 100, 200)
+
+        # Scale by 2.0 (double size)
+        scaled_up = bbox.scale(2.0)
+        x1, y1, x2, y2 = scaled_up.xyxy
+        assert x1 == 20.0
+        assert y1 == 40.0
+        assert x2 == 200.0
+        assert y2 == 400.0
+
+        # Scale by 0.5 (half size)
+        scaled_down = bbox.scale(0.5)
+        x1, y1, x2, y2 = scaled_down.xyxy
+        assert x1 == 5.0
+        assert y1 == 10.0
+        assert x2 == 50.0
+        assert y2 == 100.0
+
+        # Original bbox should be unchanged (immutable)
+        x1, y1, x2, y2 = bbox.xyxy
+        assert x1 == 10.0
+        assert y1 == 20.0
+        assert x2 == 100.0
+        assert y2 == 200.0

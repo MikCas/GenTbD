@@ -19,7 +19,6 @@ FPS_WINDOW = 30
 TEXT_COLOR = (255, 0, 0)  # BGR blue
 TEXT_FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-
 class VideoProcessor:
     """Processes video with detection, visualization, and interactive controls.
 
@@ -60,13 +59,21 @@ class VideoProcessor:
         # Video resources
         self.cap = None
         self.out = None
-        self.props = {}
+
+        # Video properties (minimal - only what's needed)
+        self.video_fps = None
+        self.total_frames = None
 
         # State
         self.frame_num = 0
         self.continuous_mode = False
         self.fps_samples = []
         self.window_name = 'Video Tracking'
+
+    @property
+    def is_live_stream(self):
+        """Check if source is a live stream (camera/RTSP) vs video file."""
+        return self.total_frames is None or self.total_frames == 0
 
     def run(self):
         """Main processing loop. Sets up video, processes frames, and cleans up."""
@@ -85,33 +92,43 @@ class VideoProcessor:
         if not self.cap.isOpened():
             raise ValueError(f"Cannot open video: {self.video_path}")
 
-        self.props = {
-            'fps': self.cap.get(cv2.CAP_PROP_FPS),
-            'width': int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            'height': int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-            'total_frames': int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        }
+        # Get video properties
+        self.video_fps = self.cap.get(cv2.CAP_PROP_FPS)
+        width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        logger.info(f"Loaded video: {self.props['width']}x{self.props['height']}, "
-                   f"{self.props['fps']:.1f} FPS, {self.props['total_frames']} frames")
+        # Log video info
+        if self.is_live_stream:
+            logger.info(f"Opened live stream: {width}x{height}, {self.video_fps:.1f} FPS")
+        else:
+            logger.info(f"Loaded video: {width}x{height}, {self.video_fps:.1f} FPS, {self.total_frames} frames")
 
+        # Setup output writer if needed
         if self.save_output:
-            if not self.output_path:
-                self.output_path = f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            self.out = cv2.VideoWriter(self.output_path, fourcc, self.props['fps'],
-                                      (self.props['width'], self.props['height']))
-            if not self.out.isOpened():
-                raise ValueError(f"Could not open video writer: {self.output_path}")
-            logger.info(f"Saving to: {self.output_path}")
+            self._setup_output_writer(width, height)
+
+    def _setup_output_writer(self, width, height):
+        """Setup video output writer.
+
+        Args:
+            width: Frame width
+            height: Frame height
+        """
+        if not self.output_path:
+            self.output_path = f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.out = cv2.VideoWriter(self.output_path, fourcc, self.video_fps, (width, height))
+
+        if not self.out.isOpened():
+            raise ValueError(f"Could not open video writer: {self.output_path}")
+
+        logger.info(f"Saving to: {self.output_path}")
 
     def _process_loop(self):
-        """Main processing loop - read frames, detect, visualize, handle input.
-
-        When skip_frames > 1, we cache the rendered frame and reuse it for skipped frames.
-        This ensures bounding boxes match the frame they were detected on.
-        """
-        cached_display_frame = None  # Cache rendered frame when skipping
+        """Main processing loop - read frames, detect, visualize, handle input."""
+        cached_frame = None
 
         while True:
             ret, frame = self.cap.read()
@@ -119,25 +136,22 @@ class VideoProcessor:
                 break
 
             self.frame_num += 1
-
-            # Determine if we should run detection on this frame
             should_detect = (self.frame_num - 1) % self.skip_frames == 0
 
             if should_detect:
-                # Run detection and render frame
+                # Run detection and render
                 detections, elapsed = self._detect_objects(frame)
                 self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
+                self._render_frame(frame, detections)
 
-                # Render boxes and overlay on frame
-                self._render_detections(frame, detections)
-                self._render_overlay(frame, detections)
+                # Cache only if frame skipping is enabled
+                if self.skip_frames > 1:
+                    cached_frame = frame.copy()
 
-                # Cache this rendered frame for skip frames
-                cached_display_frame = frame.copy()
                 display_frame = frame
             else:
-                # Reuse cached rendered frame (boxes match the detection frame)
-                display_frame = cached_display_frame if cached_display_frame is not None else frame
+                # Use cached frame (frame skipping mode)
+                display_frame = cached_frame
 
             # Display and save
             self._show_frame(display_frame)
@@ -164,16 +178,12 @@ class VideoProcessor:
             Tuple of (detections, elapsed_time)
         """
         start_time = time.time()
-        detections = []
 
-        if not self.detector:
-            return detections, time.time() - start_time
+        # Scale frame for detection if requested
+        scaled_frame, scale_factor = self._scale_frame(frame)
 
-        # Resize frame for detection if requested
-        detection_frame, scale_factor = self._prepare_detection_frame(frame)
-
-        # Run detection on prepared frame
-        detections = self.detector.detect(detection_frame)
+        # Run detection
+        detections = self.detector.detect(scaled_frame)
 
         # Scale bounding boxes back to original size if needed
         if scale_factor != 1.0:
@@ -182,18 +192,14 @@ class VideoProcessor:
         elapsed = time.time() - start_time
         return detections, elapsed
 
-    # =========================================================================
-    # Frame Resizing for Detection Optimization
-    # =========================================================================
-
-    def _prepare_detection_frame(self, frame):
-        """Prepare frame for detection by resizing if needed.
+    def _scale_frame(self, frame):
+        """Scale frame to max_dimension if needed.
 
         Args:
             frame: Original frame
 
         Returns:
-            Tuple of (detection_frame, scale_factor)
+            Tuple of (scaled_frame, scale_factor)
         """
         if not self.max_dimension:
             return frame, 1.0
@@ -208,12 +214,12 @@ class VideoProcessor:
         scale_factor = self.max_dimension / max_dim
         new_w = int(w * scale_factor)
         new_h = int(h * scale_factor)
-        detection_frame = cv2.resize(frame, (new_w, new_h))
+        scaled_frame = cv2.resize(frame, (new_w, new_h))
 
-        return detection_frame, scale_factor
+        return scaled_frame, scale_factor
 
     def _scale_detections(self, detections, scale_factor):
-        """Scale detection bounding boxes from detection resolution to original resolution.
+        """Scale detection bounding boxes from detection resolution to display resolution.
 
         Args:
             detections: List of Detection objects
@@ -223,31 +229,39 @@ class VideoProcessor:
             List of Detection objects with scaled bounding boxes
         """
         for det in detections:
-            x1, y1, x2, y2 = det['bbox'].xyxy
-            det['bbox'] = BoundingBox(
-                x1 / scale_factor,
-                y1 / scale_factor,
-                x2 / scale_factor,
-                y2 / scale_factor
-            )
+            det['bbox'] = det['bbox'].scale(1.0 / scale_factor)
         return detections
 
     # =========================================================================
     # VISUALIZATION (centralized for detections, tracks, keypoints)
     # =========================================================================
 
-    def _render_detections(self, frame, detections):
-        """Render detection bounding boxes on frame.
+    def _render_frame(self, frame, detections, tracks=None, keypoints=None):
+        """Render all visualizations on frame.
 
         Args:
             frame: Frame to draw on (will be modified in-place)
             detections: List of Detection objects to render
+            tracks: List of Track objects to render (future)
+            keypoints: List of Keypoint objects to render (future)
         """
+        # Draw detections
         for det in detections:
             det['bbox'].draw(frame, color=(0, 255, 0))
 
-    def _render_tracks(self, frame, tracks):
-        """Render tracking IDs and trajectories on frame.
+        # Draw tracks (future)
+        if tracks:
+            self._draw_tracks(frame, tracks)
+
+        # Draw keypoints (future)
+        if keypoints:
+            self._draw_keypoints(frame, keypoints)
+
+        # Draw overlay
+        self._draw_overlay(frame, detections, tracks)
+
+    def _draw_tracks(self, frame, tracks):
+        """Draw tracking IDs and trajectories on frame.
 
         Args:
             frame: Frame to draw on (will be modified in-place)
@@ -257,8 +271,8 @@ class VideoProcessor:
         """
         pass
 
-    def _render_keypoints(self, frame, keypoints):
-        """Render pose keypoints and skeleton on frame.
+    def _draw_keypoints(self, frame, keypoints):
+        """Draw pose keypoints and skeleton on frame.
 
         Args:
             frame: Frame to draw on (will be modified in-place)
@@ -268,12 +282,13 @@ class VideoProcessor:
         """
         pass
 
-    def _render_overlay(self, frame, detections):
+    def _draw_overlay(self, frame, detections, tracks=None):
         """Draw text overlay (FPS, frame info, mode, detection count) on frame.
 
         Args:
             frame: Frame to draw on (will be modified in-place)
             detections: List of detections (for counting)
+            tracks: List of tracks (for counting, future)
         """
         # Calculate rolling average FPS
         recent_fps = self.fps_samples[-FPS_WINDOW:] if self.fps_samples else [0]
@@ -281,11 +296,17 @@ class VideoProcessor:
 
         mode = "CONTINUOUS" if self.continuous_mode else "STEP"
 
+        # Frame counter text (handle live streams)
+        if self.is_live_stream:
+            frame_text = f"Frame: {self.frame_num}"
+        else:
+            frame_text = f"Frame: {self.frame_num}/{self.total_frames}"
+
         # Draw text overlay
         cv2.putText(frame, f"FPS: {avg_fps:.1f}", (10, 30),
                    TEXT_FONT, 1, TEXT_COLOR, 2)
-        cv2.putText(frame, f"Frame: {self.frame_num}/{self.props['total_frames']}",
-                   (10, 70), TEXT_FONT, 1, TEXT_COLOR, 2)
+        cv2.putText(frame, frame_text, (10, 70),
+                   TEXT_FONT, 1, TEXT_COLOR, 2)
         cv2.putText(frame, f"Mode: {mode}", (10, 110),
                    TEXT_FONT, 1, TEXT_COLOR, 2)
         if len(detections) > 0:

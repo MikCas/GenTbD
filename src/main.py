@@ -1,8 +1,8 @@
 """Video detection processor - main entry point.
 
 Usage:
-    python src/process_video.py --video data/TownCent.mp4
-    python src/process_video.py --video data/TownCent.mp4 --conf 0.7 --save-output
+    python -m src.main --video data/TownCent.mp4
+    python -m src.main --video data/TownCent.mp4 --conf 0.7 --save-output
 
 Controls:
     c      - Toggle continuous/step mode

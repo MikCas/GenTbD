@@ -30,7 +30,19 @@ class BoundingBox:
 
     def iou(self, other):
         return float(box_iou(self._tensor, other._tensor)[0, 0])
-    
+
+    def scale(self, factor):
+        """Return new BoundingBox scaled by factor.
+
+        Args:
+            factor: Scale factor (e.g., 2.0 = double size, 0.5 = half size)
+
+        Returns:
+            New BoundingBox instance with scaled coordinates
+        """
+        x1, y1, x2, y2 = self.xyxy
+        return BoundingBox(x1 * factor, y1 * factor, x2 * factor, y2 * factor)
+
     def draw(self, image, color=(0, 0, 255)):
         x1, y1, x2, y2 = map(int, self.xyxy)
         cv2.rectangle(image, (x1, y1), (x2,y2), color, 2)
