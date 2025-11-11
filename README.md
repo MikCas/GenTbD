@@ -34,35 +34,76 @@
    pip install -r requirements.txt
    ```
 
-### Running Detection on Video
+3. Add your video file to the `data/` directory (or use the default `TownCent.mp4`)
+
+### Running the Project
 
 ```bash
-# Basic usage (CPU, default settings)
+# Activate virtual environment (if not already active)
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Basic usage with default video
 python -m src.main --video data/TownCent.mp4
 
-# With custom settings
+# With custom settings (detect only people)
 python -m src.main \
     --video data/your_video.mp4 \
+    --model mobilenet \
     --conf 0.7 \
     --device mps \
     --classes 1 \
-    --save-output
+    --max-dimension 640 \
+    --skip-frames 3 \
+    --save-output \
+    --verbose
+
+# For development - run tests
+pytest
+
+# For development - check test coverage
+pytest --cov=src --cov-report=html
 ```
 
-**Arguments:**
-- `--video`: Path to input video (default: `data/TownCent.mp4`)
+**Command-line Arguments:**
+
+- `--video`: Path to input video file (default: `data/TownCent.mp4`)
+- `--model`: Detection model - `resnet50` (accurate), `mobilenet` (fast), `retinanet` (default: `mobilenet`)
 - `--conf`: Detection confidence threshold 0.0-1.0 (default: `0.5`)
 - `--device`: Device for inference: `cpu`, `mps` (Apple Silicon), or `cuda` (default: `cpu`)
-- `--classes`: Filter by class IDs (e.g., `--classes 1` for people only)
+- `--classes`: Filter by class IDs (e.g., `--classes 1` for people only, `--classes 1 3` for people and cars)
+- `--max-dimension`: Resize frames to max dimension before detection for speed (e.g., `640`)
+- `--skip-frames`: Process every Nth frame (1=all frames, 5=every 5th) (default: `1`)
 - `--save-output`: Save processed video to file
-- `--output`: Output video path (auto-generated if not specified)
+- `--output`: Output video path (default: auto-generated `output_YYYYMMDD_HHMMSS.mp4`)
 - `--verbose`: Enable detailed logging
 
 **Interactive Controls:**
+
 - `c` - Toggle continuous/step mode
 - `SPACE` - Next frame (in step mode)
 - `s` - Save current frame as image
 - `q` - Quit
+
+### Pushing Changes to GitHub
+
+```bash
+# Check status of your changes
+git status
+
+# Stage your changes
+git add .
+
+# Commit with a descriptive message
+git commit -m "Your commit message here"
+
+# Push to GitHub
+git push origin base
+
+# If you want to push to main branch instead
+git checkout main
+git merge base
+git push origin main
+```
 
 ---
 

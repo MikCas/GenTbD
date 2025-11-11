@@ -10,7 +10,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Optional
-from detecting.properties.bounding_box import BoundingBox
+from .detecting.properties.bounding_box import BoundingBox
 
 logger = logging.getLogger(__name__)
 

@@ -13,8 +13,8 @@ Controls:
 
 import argparse
 import logging
-from video_processor import VideoProcessor
-from detecting.detectors import ObjectDetector
+from .video_processor import VideoProcessor
+from .detecting.detectors import ObjectDetector
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,8 @@ def setup_arguments():
                        help='Detection confidence threshold (0.0-1.0)')
     parser.add_argument('--device', default='cpu',
                        help='Device for detection: cpu, mps, or cuda')
+    parser.add_argument('--classes', type=int, nargs='+', default=None,
+                       help='Filter by class IDs (e.g., --classes 1 for people only)')
 
     # Logger arguments
     parser.add_argument('--verbose', action='store_true',
@@ -68,9 +70,13 @@ def main():
         detector = ObjectDetector(
             model=args.model,
             device=args.device,
-            conf_threshold=args.conf
+            conf_threshold=args.conf,
+            classes=args.classes
         )
-        logger.info(f"Detector loaded on device: {args.device}")
+        if args.classes:
+            logger.info(f"Detector loaded on device: {args.device}, filtering classes: {args.classes}")
+        else:
+            logger.info(f"Detector loaded on device: {args.device}")
     except Exception as e:
         logger.error(f"Failed to load detector: {e}")
         return
