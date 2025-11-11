@@ -111,7 +111,14 @@ def main():
     try:
         if detector_type == 'keypoint':
             # Keypoint detector (human pose)
-            model = config.get('detection.model', 'resnet50')
+            # Override model to resnet50 if it's not valid for keypoint detector
+            model = config.get('detection.model')
+            if model not in ['resnet50', None]:
+                logger.warning(f"Model '{model}' not supported for keypoint detector, using 'resnet50'")
+                model = 'resnet50'
+            elif model is None:
+                model = 'resnet50'
+
             keypoint_threshold = config.get('detection.keypoint.keypoint_threshold', 0.5)
 
             detector = KeypointDetector(
@@ -120,7 +127,7 @@ def main():
                 conf_threshold=conf_threshold,
                 keypoint_threshold=keypoint_threshold
             )
-            logger.info(f"Keypoint detector loaded on device: {device}")
+            logger.info(f"Keypoint detector ({model}) loaded on device: {device}")
         else:
             # Object detector
             model = config.get('detection.model', 'mobilenet')
@@ -133,9 +140,9 @@ def main():
                 classes=classes
             )
             if classes:
-                logger.info(f"Object detector loaded on device: {device}, filtering classes: {classes}")
+                logger.info(f"Object detector ({model}) loaded on device: {device}, filtering classes: {classes}")
             else:
-                logger.info(f"Object detector loaded on device: {device}")
+                logger.info(f"Object detector ({model}) loaded on device: {device}")
     except Exception as e:
         logger.error(f"Failed to load detector: {e}")
         return
