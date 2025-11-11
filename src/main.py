@@ -24,16 +24,9 @@ def setup_arguments():
         description='Video detection processor',
         epilog='Controls: c=toggle mode | SPACE=next frame | s=save frame | q=quit'
     )
+    # Video processor arguments
     parser.add_argument('--video', default='data/TownCent.mp4',
                        help='Path to input video')
-    parser.add_argument('--conf', type=float, default=0.5,
-                       help='Detection confidence threshold (0.0-1.0)')
-    parser.add_argument('--device', default='cpu',
-                       help='Device for detection: cpu, mps, or cuda')
-    parser.add_argument('--model', default='resnet50', choices=['resnet50', 'mobilenet', 'retinanet'],
-                       help='Detection model: resnet50 (accurate), mobilenet (fast), retinanet')
-    parser.add_argument('--classes', type=int, nargs='+', default=None,
-                       help='Filter by class IDs (e.g., --classes 1 for people only)')
     parser.add_argument('--max-dimension', type=int, default=None,
                        help='Resize frames to max dimension before detection (e.g., 640 for speed)')
     parser.add_argument('--skip-frames', type=int, default=1,
@@ -42,6 +35,16 @@ def setup_arguments():
                        help='Save output video')
     parser.add_argument('--output', default=None,
                        help='Output video path (default: output_YYYYMMDD_HHMMSS.mp4)')
+
+    # Detector arguments
+    parser.add_argument('--model', default='mobilenet',
+                       help='Detection model: resnet50 (accurate), mobilenet (fast), retinanet')
+    parser.add_argument('--conf', type=float, default=0.5,
+                       help='Detection confidence threshold (0.0-1.0)')
+    parser.add_argument('--device', default='cpu',
+                       help='Device for detection: cpu, mps, or cuda')
+
+    # Logger arguments
     parser.add_argument('--verbose', action='store_true',
                        help='Enable verbose logging')
     return parser.parse_args()
@@ -59,36 +62,20 @@ def main():
     args = setup_arguments()
     setup_logging(args.verbose)
 
-    # Load detector based on model choice
+    # Setup detector
     logger.info(f"Loading {args.model} detector...")
     try:
-        if args.model == 'resnet50':
-            detector = ObjectDetector.from_fasterrcnn_resnet50(
-                device=args.device,
-                conf_threshold=args.conf,
-                classes=args.classes
-            )
-        elif args.model == 'mobilenet':
-            detector = ObjectDetector.from_mobilenet(
-                device=args.device,
-                conf_threshold=args.conf,
-                classes=args.classes
-            )
-        elif args.model == 'retinanet':
-            detector = ObjectDetector.from_retinanet(
-                device=args.device,
-                conf_threshold=args.conf,
-                classes=args.classes
-            )
-        else:
-            logger.error(f"Unknown model: {args.model}")
-            return
+        detector = ObjectDetector(
+            model=args.model,
+            device=args.device,
+            conf_threshold=args.conf
+        )
         logger.info(f"Detector loaded on device: {args.device}")
     except Exception as e:
         logger.error(f"Failed to load detector: {e}")
         return
 
-    # Create and run processor
+    # Setup and run video processor
     try:
         processor = VideoProcessor(
             video_path=args.video,

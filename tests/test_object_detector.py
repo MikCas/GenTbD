@@ -10,48 +10,53 @@ from src.detecting.detectors.object_detector import ObjectDetector
 class TestObjectDetector:
     """Test ObjectDetector functionality."""
 
-    def test_from_fasterrcnn_resnet50(self):
-        """Test FasterRCNN ResNet50 factory method."""
-        detector = ObjectDetector.from_fasterrcnn_resnet50(device='cpu', conf_threshold=0.6)
+    def test_init_resnet50(self):
+        """Test ResNet50 model initialization."""
+        detector = ObjectDetector(model='resnet50', device='cpu', conf_threshold=0.6)
 
         assert detector is not None
         assert detector.device == 'cpu'
         assert detector.conf_threshold == 0.6
         assert detector.model is not None
 
-    def test_from_mobilenet(self):
-        """Test MobileNet factory method."""
-        detector = ObjectDetector.from_mobilenet(device='cpu', conf_threshold=0.5)
+    def test_init_mobilenet(self):
+        """Test MobileNet model initialization."""
+        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
 
         assert detector is not None
         assert detector.device == 'cpu'
         assert detector.conf_threshold == 0.5
         assert detector.model is not None
 
-    def test_from_retinanet(self):
-        """Test RetinaNet factory method."""
-        detector = ObjectDetector.from_retinanet(device='cpu', conf_threshold=0.7)
+    def test_init_retinanet(self):
+        """Test RetinaNet model initialization."""
+        detector = ObjectDetector(model='retinanet', device='cpu', conf_threshold=0.7)
 
         assert detector is not None
         assert detector.device == 'cpu'
         assert detector.conf_threshold == 0.7
         assert detector.model is not None
 
-    def test_factory_with_classes_filter(self):
-        """Test factory methods with class filtering."""
-        detector = ObjectDetector.from_mobilenet(device='cpu', classes=[0, 1, 2])
+    def test_init_with_classes_filter(self):
+        """Test initialization with class filtering."""
+        detector = ObjectDetector(model='mobilenet', device='cpu', classes=[0, 1, 2])
 
         assert detector.classes == [0, 1, 2]
 
-    def test_factory_without_classes_filter(self):
-        """Test factory methods without class filtering."""
-        detector = ObjectDetector.from_mobilenet(device='cpu')
+    def test_init_without_classes_filter(self):
+        """Test initialization without class filtering."""
+        detector = ObjectDetector(model='mobilenet', device='cpu')
 
         assert detector.classes is None
 
+    def test_init_invalid_model(self):
+        """Test initialization with invalid model name."""
+        with pytest.raises(ValueError, match="Unknown model"):
+            ObjectDetector(model='invalid_model', device='cpu')
+
     def test_preprocess_bgr_to_rgb(self):
         """Test preprocessing converts BGR to RGB."""
-        detector = ObjectDetector.from_mobilenet(device='cpu')
+        detector = ObjectDetector(model='mobilenet', device='cpu')
 
         # Create a simple BGR image (blue in top-left corner)
         image = np.zeros((100, 100, 3), dtype=np.uint8)
@@ -72,7 +77,7 @@ class TestObjectDetector:
 
     def test_preprocess_normalization(self):
         """Test preprocessing normalizes values to [0, 1]."""
-        detector = ObjectDetector.from_mobilenet(device='cpu')
+        detector = ObjectDetector(model='mobilenet', device='cpu')
 
         # Create image with max values
         image = np.full((50, 50, 3), 255, dtype=np.uint8)
@@ -84,7 +89,7 @@ class TestObjectDetector:
 
     def test_preprocess_tensor_permutation(self):
         """Test preprocessing permutes dimensions correctly."""
-        detector = ObjectDetector.from_mobilenet(device='cpu')
+        detector = ObjectDetector(model='mobilenet', device='cpu')
 
         image = np.zeros((100, 200, 3), dtype=np.uint8)
         tensor = detector.preprocess(image)
@@ -94,7 +99,7 @@ class TestObjectDetector:
 
     def test_postprocess_confidence_filtering(self):
         """Test postprocessing filters by confidence threshold."""
-        detector = ObjectDetector.from_mobilenet(device='cpu', conf_threshold=0.7)
+        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.7)
 
         # Mock detection output
         output = {
@@ -112,7 +117,7 @@ class TestObjectDetector:
 
     def test_postprocess_class_filtering(self):
         """Test postprocessing filters by class IDs."""
-        detector = ObjectDetector.from_mobilenet(device='cpu', conf_threshold=0.5, classes=[1, 3])
+        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5, classes=[1, 3])
 
         # Mock detection output with classes 1, 2, 3
         output = {
@@ -130,7 +135,7 @@ class TestObjectDetector:
 
     def test_postprocess_no_class_filtering(self):
         """Test postprocessing without class filtering."""
-        detector = ObjectDetector.from_mobilenet(device='cpu', conf_threshold=0.5)
+        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
 
         # Mock detection output
         output = {
@@ -146,7 +151,7 @@ class TestObjectDetector:
 
     def test_postprocess_creates_detection_objects(self):
         """Test postprocessing creates proper Detection objects."""
-        detector = ObjectDetector.from_mobilenet(device='cpu', conf_threshold=0.5)
+        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
 
         # Mock detection output
         output = {
@@ -177,7 +182,7 @@ class TestObjectDetector:
 
     def test_postprocess_empty_result(self):
         """Test postprocessing with no detections passing threshold."""
-        detector = ObjectDetector.from_mobilenet(device='cpu', conf_threshold=0.9)
+        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.9)
 
         # Mock detection output with low scores
         output = {
@@ -190,22 +195,11 @@ class TestObjectDetector:
 
         assert len(detections) == 0
 
-    def test_internal_from_model_helper(self):
-        """Test the internal _from_model helper method."""
-        # Create a mock model with to() method
-        mock_model = Mock()
-        mock_model.to.return_value = mock_model  # to() returns self
-        mock_model.eval.return_value = mock_model  # eval() returns self
+    def test_default_model(self):
+        """Test default model is mobilenet."""
+        detector = ObjectDetector(device='cpu')
 
-        detector = ObjectDetector._from_model(
-            mock_model,
-            device='cpu',
-            conf_threshold=0.65,
-            classes=[0, 1]
-        )
-
-        # Model gets moved to device, so check the to() was called
-        assert mock_model.to.called
-        assert detector.device == 'cpu'
-        assert detector.conf_threshold == 0.65
-        assert detector.classes == [0, 1]
+        assert detector is not None
+        assert detector.model is not None
+        assert detector.conf_threshold == 0.5
+        assert detector.classes is None

@@ -15,67 +15,37 @@ from ..properties.bounding_box import BoundingBox
 class ObjectDetector(Detector):
     """FasterRCNN-based object detector for COCO classes."""
 
-    @classmethod
-    def _from_model(cls, model, device='cpu', conf_threshold=0.5, classes=None):
-        """Internal helper to create detector from a loaded model.
+    MODELS = {
+        'resnet50': fasterrcnn_resnet50_fpn,
+        'mobilenet': fasterrcnn_mobilenet_v3_large_fpn,
+        'retinanet': retinanet_resnet50_fpn,
+    }
+
+    def __init__(self, model='mobilenet', device='cpu', conf_threshold=0.5, classes=None):
+        """Initialize object detector with specified model.
 
         Args:
-            model: Loaded torchvision detection model
+            model: Model name - 'resnet50', 'mobilenet', or 'retinanet'
             device: 'cpu', 'mps' or 'cuda'
             conf_threshold: Minimum confidence for detections
             classes: List of class IDs to filter (None = all classes)
 
-        Returns:
-            ObjectDetector instance
+        Raises:
+            ValueError: If model name is not recognized
         """
-        detector = cls(model, device, conf_threshold)
-        detector.classes = classes
-        return detector
+        if model not in self.MODELS:
+            valid_models = ', '.join(self.MODELS.keys())
+            raise ValueError(f"Unknown model '{model}'. Valid options: {valid_models}")
 
-    @classmethod
-    def from_fasterrcnn_resnet50(cls, device='cpu', conf_threshold=0.5, classes=None):
-        """Load pretrained FasterRCNN ResNet50 model.
+        # Load the model
+        model_fn = self.MODELS[model]
+        loaded_model = model_fn(weights='DEFAULT')
 
-        Args:
-            device: 'cpu', 'mps' or 'cuda'
-            conf_threshold: Minimum confidence for detections
-            classes: List of class IDs to filter (None = all classes)
+        # Initialize parent class
+        super().__init__(loaded_model, device, conf_threshold)
 
-        Returns:
-            ObjectDetector instance
-        """
-        model = fasterrcnn_resnet50_fpn(weights='DEFAULT')
-        return cls._from_model(model, device, conf_threshold, classes)
-
-    @classmethod
-    def from_retinanet(cls, device='cpu', conf_threshold=0.5, classes=None):
-        """Load pretrained RetinaNet ResNet50 model.
-
-        Args:
-            device: 'cpu', 'mps' or 'cuda'
-            conf_threshold: Minimum confidence for detections
-            classes: List of class IDs to filter (None = all classes)
-
-        Returns:
-            ObjectDetector instance
-        """
-        model = retinanet_resnet50_fpn(weights='DEFAULT')
-        return cls._from_model(model, device, conf_threshold, classes)
-
-    @classmethod
-    def from_mobilenet(cls, device='cpu', conf_threshold=0.5, classes=None):
-        """Load pretrained FasterRCNN MobileNetV3 model (lightweight, ~10-20x faster).
-
-        Args:
-            device: 'cpu', 'mps' or 'cuda'
-            conf_threshold: Minimum confidence for detections
-            classes: List of class IDs to filter (None = all classes)
-
-        Returns:
-            ObjectDetector instance
-        """
-        model = fasterrcnn_mobilenet_v3_large_fpn(weights='DEFAULT')
-        return cls._from_model(model, device, conf_threshold, classes) 
+        # Store class filter
+        self.classes = classes 
 
     def preprocess(self, image: np.ndarray) -> torch.Tensor:
         """Convert BGR image to RGB tensor normalized to [0, 1].
