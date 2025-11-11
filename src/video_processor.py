@@ -228,43 +228,49 @@ class VideoProcessor:
         return scaled_frame, scale_factor
 
     def _scale_detections(self, detections, scale_factor):
-        """Scale detection bounding boxes from detection resolution to display resolution.
+        """Scale detection bounding boxes and keypoints from detection resolution to display resolution.
 
         Args:
             detections: List of Detection objects
             scale_factor: Factor used to resize frame (target_size / original_size)
 
         Returns:
-            List of Detection objects with scaled bounding boxes
+            List of Detection objects with scaled bounding boxes and keypoints
         """
         for det in detections:
+            # Scale bounding box
             det['bbox'] = det['bbox'].scale(1.0 / scale_factor)
+
+            # Scale keypoints if present (for KeypointDetector)
+            if 'keypoints' in det:
+                det['keypoints'] = det['keypoints'].scale(1.0 / scale_factor)
+
         return detections
 
     # =========================================================================
     # VISUALIZATION (centralized for detections, tracks, keypoints)
     # =========================================================================
 
-    def _render_frame(self, frame, detections, tracks=None, keypoints=None):
+    def _render_frame(self, frame, detections, tracks=None):
         """Render all visualizations on frame.
 
         Args:
             frame: Frame to draw on (will be modified in-place)
             detections: List of Detection objects to render
             tracks: List of Track objects to render (future)
-            keypoints: List of Keypoint objects to render (future)
         """
-        # Draw detections
+        # Draw detections and keypoints
         for det in detections:
+            # Draw bounding box
             det['bbox'].draw(frame, color=(0, 255, 0))
+
+            # Draw keypoints if present (for KeypointDetector)
+            if 'keypoints' in det:
+                det['keypoints'].draw(frame, color=(255, 0, 255))
 
         # Draw tracks (future)
         if tracks:
             self._draw_tracks(frame, tracks)
-
-        # Draw keypoints (future)
-        if keypoints:
-            self._draw_keypoints(frame, keypoints)
 
         # Draw overlay
         self._draw_overlay(frame, detections, tracks)
@@ -277,17 +283,6 @@ class VideoProcessor:
             tracks: List of Track objects to render
 
         Future placeholder for tracking visualization.
-        """
-        pass
-
-    def _draw_keypoints(self, frame, keypoints):
-        """Draw pose keypoints and skeleton on frame.
-
-        Args:
-            frame: Frame to draw on (will be modified in-place)
-            keypoints: List of Keypoint objects to render
-
-        Future placeholder for keypoint visualization.
         """
         pass
 

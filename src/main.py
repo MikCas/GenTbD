@@ -14,7 +14,7 @@ Controls:
 import argparse
 import logging
 from .video_processor import VideoProcessor
-from .detecting.detectors import ObjectDetector
+from .detecting.detectors import ObjectDetector, KeypointDetector
 from .config import Config
 
 logger = logging.getLogger(__name__)
@@ -47,14 +47,16 @@ def setup_arguments():
                        help='Output video path (default: output_YYYYMMDD_HHMMSS.mp4)')
 
     # Detector arguments
-    parser.add_argument('--model', default='mobilenet',
-                       help='Detection model: resnet50 (accurate), mobilenet (fast), retinanet')
-    parser.add_argument('--conf', type=float, default=0.5,
+    parser.add_argument('--detector-type', type=str, default=None, choices=['object', 'keypoint'],
+                       help='Detector type: object (default) or keypoint (human pose)')
+    parser.add_argument('--model', default=None,
+                       help='Detection model: resnet50, mobilenet, retinanet (object); resnet50 (keypoint)')
+    parser.add_argument('--conf', type=float, default=None,
                        help='Detection confidence threshold (0.0-1.0)')
-    parser.add_argument('--device', default='cpu',
+    parser.add_argument('--device', default=None,
                        help='Device for detection: cpu, mps, or cuda')
     parser.add_argument('--classes', type=int, nargs='+', default=None,
-                       help='Filter by class IDs (e.g., --classes 1 for people only)')
+                       help='Filter by class IDs (e.g., --classes 1 for people only) - object detector only')
 
     # Logger arguments
     parser.add_argument('--verbose', action='store_true',
@@ -90,10 +92,9 @@ def main():
 
     # Get configuration values
     source = config.get('video.source', 'data/TownCent.mp4')
-    model = config.get('detection.model', 'mobilenet')
+    detector_type = config.get('detection.type', 'object')
     device = config.get('detection.device', 'cpu')
     conf_threshold = config.get('detection.conf_threshold', 0.5)
-    classes = config.get('detection.classes', None)
     max_dimension = config.get('video.max_dimension', None)
     skip_frames = config.get('video.skip_frames', 1)
     save_output = config.get('video.save_output', False)
@@ -105,19 +106,36 @@ def main():
     else:
         logger.info(f"Using video source: {source}")
 
-    # Setup detector
-    logger.info(f"Loading {model} detector...")
+    # Setup detector based on type
+    logger.info(f"Loading {detector_type} detector...")
     try:
-        detector = ObjectDetector(
-            model=model,
-            device=device,
-            conf_threshold=conf_threshold,
-            classes=classes
-        )
-        if classes:
-            logger.info(f"Detector loaded on device: {device}, filtering classes: {classes}")
+        if detector_type == 'keypoint':
+            # Keypoint detector (human pose)
+            model = config.get('detection.model', 'resnet50')
+            keypoint_threshold = config.get('detection.keypoint.keypoint_threshold', 0.5)
+
+            detector = KeypointDetector(
+                model=model,
+                device=device,
+                conf_threshold=conf_threshold,
+                keypoint_threshold=keypoint_threshold
+            )
+            logger.info(f"Keypoint detector loaded on device: {device}")
         else:
-            logger.info(f"Detector loaded on device: {device}")
+            # Object detector
+            model = config.get('detection.model', 'mobilenet')
+            classes = config.get('detection.classes', None)
+
+            detector = ObjectDetector(
+                model=model,
+                device=device,
+                conf_threshold=conf_threshold,
+                classes=classes
+            )
+            if classes:
+                logger.info(f"Object detector loaded on device: {device}, filtering classes: {classes}")
+            else:
+                logger.info(f"Object detector loaded on device: {device}")
     except Exception as e:
         logger.error(f"Failed to load detector: {e}")
         return

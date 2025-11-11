@@ -118,6 +118,8 @@ class Config:
             self.set('video.output_path', args.output)
 
         # Detection
+        if hasattr(args, 'detector_type') and args.detector_type:
+            self.set('detection.type', args.detector_type)
         if hasattr(args, 'model') and args.model:
             self.set('detection.model', args.model)
         if hasattr(args, 'device') and args.device:

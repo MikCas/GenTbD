@@ -10,10 +10,21 @@ video:
 
 # Detection settings
 detection:
-  model: "mobilenet"           # Model: resnet50, mobilenet, retinanet
+  type: "object"               # Detector type: "object" or "keypoint"
+  model: "mobilenet"           # Model: resnet50, mobilenet, retinanet (for object)
+                               #        resnet50 (for keypoint)
   device: "cpu"                # Device: cpu, mps, cuda
   conf_threshold: 0.5          # Confidence threshold (0.0-1.0)
   classes: null                # Filter classes (null = all, [1] = people only)
+                               # Note: keypoint detector only detects people
+
+  # Keypoint-specific settings (when type = "keypoint")
+  keypoint:
+    keypoint_threshold: 0.5    # Minimum visibility for individual keypoints
+    draw_skeleton: true        # Draw skeleton connections between keypoints
+    draw_keypoints: true       # Draw keypoint circles
+    keypoint_radius: 4         # Radius of keypoint circles
+    skeleton_thickness: 2      # Thickness of skeleton lines
 
 # Tracking settings (for future implementation)
 tracking:
