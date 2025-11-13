@@ -14,7 +14,7 @@ Controls:
 import argparse
 import logging
 from .video_processor import VideoProcessor
-from .detecting.detectors import ObjectDetector, KeypointDetector
+from .detecting import DetectorFactory
 from .config import Config
 
 logger = logging.getLogger(__name__)
@@ -106,43 +106,10 @@ def main():
     else:
         logger.info(f"Using video source: {source}")
 
-    # Setup detector based on type
+    # Setup detector using factory
     logger.info(f"Loading {detector_type} detector...")
     try:
-        if detector_type == 'keypoint':
-            # Keypoint detector (human pose)
-            # Override model to resnet50 if it's not valid for keypoint detector
-            model = config.get('detection.model')
-            if model not in ['resnet50', None]:
-                logger.warning(f"Model '{model}' not supported for keypoint detector, using 'resnet50'")
-                model = 'resnet50'
-            elif model is None:
-                model = 'resnet50'
-
-            keypoint_threshold = config.get('detection.keypoint.keypoint_threshold', 0.5)
-
-            detector = KeypointDetector(
-                model=model,
-                device=device,
-                conf_threshold=conf_threshold,
-                keypoint_threshold=keypoint_threshold
-            )
-            logger.info(f"Keypoint detector ({model}) loaded on device: {device}")
-        else:
-            # Object detector
-            model = config.get('detection.model', 'mobilenet')
-            classes = config.get('detection.classes', None)
-
-            detector = ObjectDetector(
-                model=model,
-                device=device,
-                conf_threshold=conf_threshold,
-                classes=classes
-            )
-            if classes:
-                logger.info(f"Object detector ({model}) loaded on device: {device}, filtering classes: {classes}")
-            else:
-                logger.info(f"Object detector ({model}) loaded on device: {device}")
+        detector = DetectorFactory.create(config, logger)
     except Exception as e:
         logger.error(f"Failed to load detector: {e}")
         return
