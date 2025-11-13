@@ -10,6 +10,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Optional
+from .core import Frame
 from .core.properties import BoundingBox
 
 logger = logging.getLogger(__name__)
@@ -137,30 +138,42 @@ class VideoProcessor:
 
     def _process_loop(self):
         """Main processing loop - read frames, detect, visualize, handle input."""
-        cached_frame = None
+        cached_display_frame = None
+        frame_count = 0
 
         while True:
-            ret, frame = self.cap.read()
+            ret, frame_data = self.cap.read()
             if not ret:
                 break
 
-            self.frame_num += 1
-            should_detect = (self.frame_num - 1) % self.skip_frames == 0
+            frame_count += 1
+
+            # Create Frame object with metadata
+            timestamp = frame_count / self.video_fps if self.video_fps > 0 else 0
+            frame = Frame(
+                data=frame_data,
+                frame_id=frame_count - 1,  # 0-indexed
+                timestamp=timestamp,
+                source_id=str(self.source)
+            )
+
+            self.frame_num = frame_count
+            should_detect = (frame_count - 1) % self.skip_frames == 0
 
             if should_detect:
                 # Run detection and render
                 detections, elapsed = self._detect_objects(frame)
                 self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
-                self._render_frame(frame, detections)
+                self._render_frame(frame.data, detections)
 
                 # Cache only if frame skipping is enabled
                 if self.skip_frames > 1:
-                    cached_frame = frame.copy()
+                    cached_display_frame = frame.data.copy()
 
-                display_frame = frame
+                display_frame = frame.data
             else:
                 # Use cached frame (frame skipping mode)
-                display_frame = cached_frame
+                display_frame = cached_display_frame
 
             # Display and save
             self._show_frame(display_frame)
@@ -175,57 +188,35 @@ class VideoProcessor:
     # Detection Pipeline
     # =========================================================================
 
-    def _detect_objects(self, frame):
+    def _detect_objects(self, frame: Frame):
         """Run object detection on frame.
 
-        Handles frame resizing and bounding box scaling automatically.
+        Handles frame resizing and bounding box scaling automatically using Frame abstraction.
 
         Args:
-            frame: Input frame (will not be modified)
+            frame: Input Frame object with metadata
 
         Returns:
             Tuple of (detections, elapsed_time)
         """
         start_time = time.time()
 
-        # Scale frame for detection if requested
-        scaled_frame, scale_factor = self._scale_frame(frame)
+        # Scale frame for detection if requested (Frame handles scaling)
+        if self.max_dimension and max(frame.height, frame.width) > self.max_dimension:
+            scale = self.max_dimension / max(frame.height, frame.width)
+            detection_frame = frame.scaled(scale)
+        else:
+            detection_frame = frame
 
-        # Run detection
-        detections = self.detector.detect(scaled_frame)
+        # Run detection on frame data
+        detections = self.detector.detect(detection_frame.data)
 
-        # Scale bounding boxes back to original size if needed
-        if scale_factor != 1.0:
-            detections = self._scale_detections(detections, scale_factor)
+        # Scale detections back if frame was scaled
+        if detection_frame.scale_factor != 1.0:
+            detections = self._scale_detections(detections, detection_frame.scale_factor)
 
         elapsed = time.time() - start_time
         return detections, elapsed
-
-    def _scale_frame(self, frame):
-        """Scale frame to max_dimension if needed.
-
-        Args:
-            frame: Original frame
-
-        Returns:
-            Tuple of (scaled_frame, scale_factor)
-        """
-        if not self.max_dimension:
-            return frame, 1.0
-
-        h, w = frame.shape[:2]
-        max_dim = max(h, w)
-
-        if max_dim <= self.max_dimension:
-            return frame, 1.0
-
-        # Calculate scale factor and resize
-        scale_factor = self.max_dimension / max_dim
-        new_w = int(w * scale_factor)
-        new_h = int(h * scale_factor)
-        scaled_frame = cv2.resize(frame, (new_w, new_h))
-
-        return scaled_frame, scale_factor
 
     def _scale_detections(self, detections, scale_factor):
         """Scale detection bounding boxes and keypoints from detection resolution to display resolution.

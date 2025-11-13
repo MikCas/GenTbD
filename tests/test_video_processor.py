@@ -39,39 +39,65 @@ class TestVideoProcessor:
         assert processor.fps_samples == []
         assert processor.window_name == 'Video Tracking'
 
-    def test_scale_frame_no_resize(self, processor):
-        """Test frame scaling when no resize is needed."""
+    def test_frame_no_resize(self, processor):
+        """Test Frame scaling when no resize is needed."""
+        from src.core import Frame
+
         # Small frame that doesn't need resizing
-        frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        scaled_frame, scale_factor = processor._scale_frame(frame)
+        frame_data = np.zeros((480, 640, 3), dtype=np.uint8)
+        frame = Frame(data=frame_data, frame_id=0, timestamp=0.0, source_id="test")
 
-        assert scaled_frame.shape == frame.shape
-        assert scale_factor == 1.0
+        # With max_dimension=640, this frame doesn't need scaling
+        if processor.max_dimension and max(frame.height, frame.width) > processor.max_dimension:
+            scale = processor.max_dimension / max(frame.height, frame.width)
+            scaled = frame.scaled(scale)
+        else:
+            scaled = frame
 
-    def test_scale_frame_with_resize(self, processor):
-        """Test frame scaling with resizing."""
+        assert scaled.shape == frame.shape
+        assert scaled.scale_factor == 1.0
+
+    def test_frame_with_resize(self, processor):
+        """Test Frame scaling with resizing."""
+        from src.core import Frame
+
         # Large frame that needs resizing
-        frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        scaled_frame, scale_factor = processor._scale_frame(frame)
+        frame_data = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        frame = Frame(data=frame_data, frame_id=0, timestamp=0.0, source_id="test")
 
         # Should be resized to max_dimension=640
-        assert scaled_frame.shape[1] == 640  # width
-        assert scaled_frame.shape[0] == 360  # height (proportional)
-        assert abs(scale_factor - 640/1920) < 0.001
+        if processor.max_dimension and max(frame.height, frame.width) > processor.max_dimension:
+            scale = processor.max_dimension / max(frame.height, frame.width)
+            scaled = frame.scaled(scale)
+        else:
+            scaled = frame
 
-    def test_scale_frame_no_max_dimension(self, mock_detector, tmp_path):
-        """Test frame scaling without max_dimension set."""
+        assert scaled.width == 640  # width
+        assert scaled.height == 360  # height (proportional)
+        assert abs(scaled.scale_factor - 640/1920) < 0.001
+
+    def test_frame_no_max_dimension(self, mock_detector, tmp_path):
+        """Test Frame scaling without max_dimension set."""
+        from src.core import Frame
+
         processor = VideoProcessor(
             source=str(tmp_path / "dummy.mp4"),
             detector=mock_detector,
             max_dimension=None  # No resizing
         )
 
-        frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        scaled_frame, scale_factor = processor._scale_frame(frame)
+        frame_data = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        frame = Frame(data=frame_data, frame_id=0, timestamp=0.0, source_id="test")
 
-        assert scaled_frame.shape == frame.shape
-        assert scale_factor == 1.0
+        # No scaling should happen
+        if processor.max_dimension and max(frame.height, frame.width) > processor.max_dimension:
+            scale = processor.max_dimension / max(frame.height, frame.width)
+            scaled = frame.scaled(scale)
+        else:
+            scaled = frame
+
+        assert scaled.shape == frame.shape
+        assert scaled.scale_factor == 1.0
 
     def test_scale_detections(self, processor):
         """Test scaling detection bounding boxes using bbox.scale()."""
