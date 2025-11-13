@@ -12,6 +12,7 @@ from ..config import Config
 from .detector import Detector
 from .detectors.object_detector import ObjectDetector
 from .detectors.keypoint_detector import KeypointDetector
+from .detectors.reid_detector import ReIDDetector
 
 
 class DetectorFactory:
@@ -61,10 +62,14 @@ class DetectorFactory:
             return DetectorFactory._create_object_detector(
                 config, device, conf_threshold, logger
             )
+        elif detector_type == 'reid':
+            return DetectorFactory._create_reid_detector(
+                config, device, conf_threshold, logger
+            )
         else:
             raise ValueError(
                 f"Unknown detector type: '{detector_type}'. "
-                f"Valid options: 'object', 'keypoint'"
+                f"Valid options: 'object', 'keypoint', 'reid'"
             )
 
     @staticmethod
@@ -154,5 +159,45 @@ class DetectorFactory:
                 )
             else:
                 logger.info(f"Object detector ({model}) loaded on device: {device}")
+
+        return detector
+
+    @staticmethod
+    def _create_reid_detector(
+        config: Config,
+        device: str,
+        conf_threshold: float,
+        logger: Optional[logging.Logger]
+    ) -> ReIDDetector:
+        """
+        Create ReIDDetector with model selection.
+
+        ReIDDetector supports multiple OSNet variants and ResNet50.
+        Default model is 'osnet_x1_0'.
+
+        Args:
+            config: Configuration object
+            device: Device to run detector on ('cpu', 'cuda', 'mps')
+            conf_threshold: Confidence threshold (not used in ReID)
+            logger: Optional logger for info messages
+
+        Returns:
+            ReIDDetector instance
+        """
+        model = config.get('detection.model', 'osnet_x1_0')
+        embedding_dim = config.get('detection.reid.embedding_dim', 512)
+
+        detector = ReIDDetector(
+            model=model,
+            device=device,
+            conf_threshold=conf_threshold,
+            embedding_dim=embedding_dim
+        )
+
+        if logger:
+            logger.info(
+                f"ReID detector ({model}) loaded on device: {device}, "
+                f"embedding_dim: {embedding_dim}"
+            )
 
         return detector

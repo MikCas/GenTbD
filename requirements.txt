@@ -3,3 +3,4 @@ opencv-python==4.8.0.76
 torch>=2.0.0
 torchvision>=0.15.0
 pyyaml>=6.0
+torchreid>=1.4.0

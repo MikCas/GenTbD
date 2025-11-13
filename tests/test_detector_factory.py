@@ -5,6 +5,7 @@ import logging
 from src.detecting.factory import DetectorFactory
 from src.detecting.detectors.object_detector import ObjectDetector
 from src.detecting.detectors.keypoint_detector import KeypointDetector
+from src.detecting.detectors.reid_detector import ReIDDetector
 from src.config import Config
 
 
@@ -233,3 +234,108 @@ class TestDetectorFactory:
 
         # Should default to object detector
         assert isinstance(detector, ObjectDetector)
+
+    def test_create_reid_detector_default(self):
+        """Test creating ReIDDetector with default config."""
+        config_dict = {
+            'detection': {
+                'type': 'reid',
+                'model': 'osnet_x1_0',
+                'device': 'cpu',
+                'conf_threshold': 0.5,
+                'reid': {
+                    'embedding_dim': 512
+                }
+            }
+        }
+        config = Config(config_dict)
+
+        detector = DetectorFactory.create(config)
+
+        assert isinstance(detector, ReIDDetector)
+        assert detector.device == 'cpu'
+        assert detector.model_name == 'osnet_x1_0'
+        assert detector.embedding_dim == 512
+
+    def test_create_reid_detector_different_models(self):
+        """Test creating ReIDDetector with different OSNet models."""
+        models = ['osnet_x1_0', 'osnet_x0_75', 'osnet_x0_5', 'resnet50']
+
+        for model in models:
+            config_dict = {
+                'detection': {
+                    'type': 'reid',
+                    'model': model,
+                    'device': 'cpu',
+                    'conf_threshold': 0.5,
+                    'reid': {
+                        'embedding_dim': 512
+                    }
+                }
+            }
+            config = Config(config_dict)
+
+            detector = DetectorFactory.create(config)
+
+            assert isinstance(detector, ReIDDetector)
+            assert detector.model_name == model
+
+    def test_create_reid_detector_with_logger(self):
+        """Test ReIDDetector creation with logger logs info message."""
+        config_dict = {
+            'detection': {
+                'type': 'reid',
+                'model': 'osnet_x1_0',
+                'device': 'cpu',
+                'conf_threshold': 0.5,
+                'reid': {
+                    'embedding_dim': 512
+                }
+            }
+        }
+        config = Config(config_dict)
+        logger = logging.getLogger('test')
+
+        detector = DetectorFactory.create(config, logger)
+
+        assert isinstance(detector, ReIDDetector)
+
+    def test_create_reid_detector_defaults_model(self):
+        """Test ReIDDetector defaults to osnet_x1_0 when model not specified."""
+        config_dict = {
+            'detection': {
+                'type': 'reid',
+                # model not specified
+                'device': 'cpu',
+                'conf_threshold': 0.5,
+                'reid': {
+                    'embedding_dim': 512
+                }
+            }
+        }
+        config = Config(config_dict)
+
+        detector = DetectorFactory.create(config)
+
+        assert isinstance(detector, ReIDDetector)
+        assert detector.model_name == 'osnet_x1_0'
+
+    def test_create_reid_detector_defaults_embedding_dim(self):
+        """Test ReIDDetector defaults to 512 embedding_dim when not specified."""
+        config_dict = {
+            'detection': {
+                'type': 'reid',
+                'model': 'osnet_x1_0',
+                'device': 'cpu',
+                'conf_threshold': 0.5,
+                'reid': {
+                    # embedding_dim not specified
+                }
+            }
+        }
+        config = Config(config_dict)
+
+        detector = DetectorFactory.create(config)
+
+        assert isinstance(detector, ReIDDetector)
+        assert detector.embedding_dim == 512

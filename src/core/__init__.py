@@ -8,6 +8,7 @@ tracking, and other modules.
 from .frame import Frame
 from .properties.bounding_box import BoundingBox
 from .properties.keypoints import Keypoints, KEYPOINT_NAMES, SKELETON
+from .properties.embedding import Embedding
 
 __all__ = [
     'Frame',
@@ -15,4 +16,5 @@ __all__ = [
     'Keypoints',
     'KEYPOINT_NAMES',
     'SKELETON',
+    'Embedding',
 ]

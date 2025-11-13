@@ -10,9 +10,10 @@ video:
 
 # Detection settings
 detection:
-  type: "object"               # Detector type: "object" or "keypoint"
+  type: "object"               # Detector type: "object", "keypoint", or "reid"
   model: "mobilenet"           # Model: resnet50, mobilenet, retinanet (for object)
                                #        resnet50 (for keypoint)
+                               #        osnet_x1_0, osnet_x0_75, osnet_x0_5, resnet50 (for reid)
   device: "cpu"                # Device: cpu, mps, cuda
   conf_threshold: 0.5          # Confidence threshold (0.0-1.0)
   classes: null                # Filter classes (null = all, [1] = people only)
@@ -25,6 +26,10 @@ detection:
     draw_keypoints: true       # Draw keypoint circles
     keypoint_radius: 4         # Radius of keypoint circles
     skeleton_thickness: 2      # Thickness of skeleton lines
+
+  # ReID-specific settings (when type = "reid")
+  reid:
+    embedding_dim: 512         # Embedding dimension (512 for OSNet models)
 
 # Tracking settings (for future implementation)
 tracking:
