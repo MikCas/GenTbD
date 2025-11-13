@@ -2,7 +2,7 @@
 
 import pytest
 import torch
-from src.detecting.properties.bounding_box import BoundingBox
+from src.core.properties import BoundingBox
 
 
 class TestBoundingBox:

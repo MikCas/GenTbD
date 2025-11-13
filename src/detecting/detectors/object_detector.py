@@ -9,7 +9,7 @@ from torchvision.models.detection import (
 import cv2
 from ..detector import Detector
 from ..detection import Detection
-from ..properties.bounding_box import BoundingBox
+from ...core.properties import BoundingBox
 
 
 class ObjectDetector(Detector):

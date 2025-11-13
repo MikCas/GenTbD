@@ -7,8 +7,7 @@ from torchvision.models.detection import keypointrcnn_resnet50_fpn
 import cv2
 from ..detector import Detector
 from ..detection import Detection
-from ..properties.bounding_box import BoundingBox
-from ..properties.keypoints import Keypoints
+from ...core.properties import BoundingBox, Keypoints
 
 
 class KeypointDetector(Detector):

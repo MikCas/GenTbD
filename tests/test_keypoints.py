@@ -2,7 +2,7 @@
 
 import pytest
 import numpy as np
-from src.detecting.properties.keypoints import Keypoints, KEYPOINT_NAMES
+from src.core.properties import Keypoints, KEYPOINT_NAMES
 
 
 class TestKeypoints:

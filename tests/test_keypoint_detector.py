@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import torch
 from src.detecting.detectors.keypoint_detector import KeypointDetector
-from src.detecting.properties.keypoints import Keypoints
+from src.core.properties import Keypoints
 
 
 class TestKeypointDetector:

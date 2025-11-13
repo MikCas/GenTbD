@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 from unittest.mock import Mock, MagicMock
 from src.video_processor import VideoProcessor
-from src.detecting.properties.bounding_box import BoundingBox
+from src.core.properties import BoundingBox
 from src.detecting.detection import Detection
 
 
