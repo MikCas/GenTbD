@@ -36,7 +36,7 @@ class TestVideoProcessor:
         assert processor.skip_frames == 3
         assert processor.frame_num == 0
         assert processor.continuous_mode == False
-        assert processor.fps_samples == []
+        assert len(processor.fps_samples) == 0  # deque is empty
         assert processor.window_name == 'Video Tracking'
 
     def test_frame_no_resize(self, processor):

@@ -8,6 +8,7 @@ import cv2
 import time
 import logging
 import os
+from collections import deque
 from datetime import datetime
 from typing import Optional
 from .core import Frame
@@ -68,7 +69,8 @@ class VideoProcessor:
         # State
         self.frame_num = 0
         self.continuous_mode = False
-        self.fps_samples = []
+        # Use deque with maxlen to prevent unbounded growth
+        self.fps_samples = deque(maxlen=FPS_WINDOW)
         self.window_name = 'Video Tracking'
 
     @property
@@ -166,9 +168,10 @@ class VideoProcessor:
                 self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
                 self._render_frame(frame.data, detections)
 
-                # Cache only if frame skipping is enabled
+                # Cache for frame skipping mode (store reference, not copy)
+                # The frame.data is already a copy from _render_frame modifications
                 if self.skip_frames > 1:
-                    cached_display_frame = frame.data.copy()
+                    cached_display_frame = frame.data
 
                 display_frame = frame.data
             else:
@@ -285,9 +288,8 @@ class VideoProcessor:
             detections: List of detections (for counting)
             tracks: List of tracks (for counting, future)
         """
-        # Calculate rolling average FPS
-        recent_fps = self.fps_samples[-FPS_WINDOW:] if self.fps_samples else [0]
-        avg_fps = sum(recent_fps) / len(recent_fps)
+        # Calculate rolling average FPS (deque already limits to FPS_WINDOW)
+        avg_fps = sum(self.fps_samples) / len(self.fps_samples) if self.fps_samples else 0
 
         mode = "CONTINUOUS" if self.continuous_mode else "STEP"
 

@@ -187,10 +187,10 @@ class DetectorFactory:
         model = config.get('detection.model', 'osnet_x1_0')
         embedding_dim = config.get('detection.reid.embedding_dim', 512)
 
+        # ReIDExtractor doesn't use conf_threshold (it's a FeatureExtractor, not Detector)
         detector = ReIDDetector(
             model=model,
             device=device,
-            conf_threshold=conf_threshold,
             embedding_dim=embedding_dim
         )
 

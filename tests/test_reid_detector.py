@@ -97,21 +97,21 @@ class TestReIDDetector:
         # Should not add embedding
         assert 'embedding' not in enhanced[0]
 
-    def test_embed_single_crop(self):
-        """Test embed() extracts embedding from single crop."""
+    def test_extract_single_crop(self):
+        """Test extract() extracts embedding from single crop."""
         detector = ReIDDetector(model='osnet_x1_0', device='cpu')
 
         # Create person crop (256x128 is standard for ReID)
         crop = np.random.randint(0, 255, (256, 128, 3), dtype=np.uint8)
 
-        embedding = detector.embed(crop)
+        embedding = detector.extract(crop)
 
         assert isinstance(embedding, Embedding)
         assert embedding.dim == 512
         assert embedding.is_normalized()
 
-    def test_embed_batch(self):
-        """Test embed_batch() processes multiple crops."""
+    def test_extract_batch(self):
+        """Test extract_batch() processes multiple crops."""
         detector = ReIDDetector(model='osnet_x1_0', device='cpu')
 
         # Create multiple crops
@@ -121,17 +121,17 @@ class TestReIDDetector:
             np.random.randint(0, 255, (256, 128, 3), dtype=np.uint8)
         ]
 
-        embeddings = detector.embed_batch(crops)
+        embeddings = detector.extract_batch(crops)
 
         assert len(embeddings) == 3
         assert all(isinstance(emb, Embedding) for emb in embeddings)
         assert all(emb.dim == 512 for emb in embeddings)
 
-    def test_embed_batch_empty(self):
-        """Test embed_batch() handles empty list."""
+    def test_extract_batch_empty(self):
+        """Test extract_batch() handles empty list."""
         detector = ReIDDetector(model='osnet_x1_0', device='cpu')
 
-        embeddings = detector.embed_batch([])
+        embeddings = detector.extract_batch([])
 
         assert embeddings == []
 

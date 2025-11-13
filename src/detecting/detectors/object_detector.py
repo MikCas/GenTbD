@@ -50,19 +50,22 @@ class ObjectDetector(Detector):
     def preprocess(self, image: np.ndarray) -> torch.Tensor:
         """Convert BGR image to RGB tensor normalized to [0, 1].
 
+        Uses the default PyTorch preprocessing: BGR → RGB, normalize to [0, 1],
+        and convert to CHW format.
+
         Args:
             image: OpenCV image in BGR format (H, W, 3)
 
         Returns:
             Tensor with shape (3, H, W) and values in [0, 1]
         """
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        tensor = torch.from_numpy(image_rgb).float() / 255.0
-        tensor = tensor.permute(2, 0, 1)
-        return tensor
+        return self._default_preprocess_pytorch(image)
 
     def inference(self, input_tensor: torch.Tensor) -> dict:
         """Run FasterRCNN inference.
+
+        Uses the default PyTorch inference: add batch dimension, move to device,
+        run model, and return first output.
 
         Args:
             input_tensor: Preprocessed image tensor (3, H, W)
@@ -70,11 +73,7 @@ class ObjectDetector(Detector):
         Returns:
             FasterRCNN output dict with 'boxes', 'labels', 'scores'
         """
-        # Add batch dimension and move to device
-        input_batch = input_tensor.unsqueeze(0).to(self.device)
-        # Run model (returns list of dicts, one per image)
-        outputs = self.model(input_batch)
-        return outputs[0]
+        return self._default_inference_pytorch(input_tensor)
 
     def postprocess(self, output: dict, image_shape: tuple) -> List[Detection]:
         """Filter detections and convert to Detection objects.
