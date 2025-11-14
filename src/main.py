@@ -111,7 +111,7 @@ def main():
     try:
         detector = DetectorFactory.create(config, logger)
     except Exception as e:
-        logger.error(f"Failed to load detector: {e}")
+        logger.error(f"Failed to load detector: {e}", exc_info=verbose)
         return
 
     # Setup and run video processor
@@ -126,11 +126,11 @@ def main():
         )
         processor.run()
     except ValueError as e:
-        logger.error(f"{e}")
+        logger.error(f"{e}", exc_info=verbose)
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
     except Exception as e:
-        logger.error(f"Error during processing: {e}")
+        logger.error(f"Error during processing: {e}", exc_info=True)
         raise
 
 if __name__ == '__main__':

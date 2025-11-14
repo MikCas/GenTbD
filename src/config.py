@@ -19,6 +19,7 @@ class Config:
             config_dict: Dictionary of configuration values
         """
         self._config = config_dict
+        self._validate()
 
     @classmethod
     def from_yaml(cls, yaml_path: str) -> 'Config':
@@ -140,6 +141,26 @@ class Config:
             Dictionary representation of config
         """
         return self._config.copy()
+
+    def _validate(self):
+        """Validate configuration structure.
+
+        Raises:
+            ValueError: If invalid values are specified
+        """
+        # Only validate if config is not empty (allow empty for testing)
+        if not self._config:
+            return
+
+        # Validate detection type if specified
+        if 'detection' in self._config and 'type' in self._config['detection']:
+            valid_types = ['object', 'keypoint', 'reid']
+            det_type = self._config['detection']['type']
+            if det_type not in valid_types:
+                raise ValueError(
+                    f"Invalid detection type: '{det_type}'. "
+                    f"Valid options: {', '.join(valid_types)}"
+                )
 
     def __repr__(self) -> str:
         """String representation of config."""

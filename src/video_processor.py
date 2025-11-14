@@ -141,39 +141,42 @@ class VideoProcessor:
     def _process_loop(self):
         """Main processing loop - read frames, detect, visualize, handle input."""
         cached_display_frame = None
-        frame_count = 0
+        frame_count = 0  # 0-indexed frame counter
 
         while True:
             ret, frame_data = self.cap.read()
             if not ret:
                 break
 
-            frame_count += 1
+            # Create Frame object with metadata (0-indexed)
+            # Handle video_fps = 0 or None (some webcams/codecs)
+            if self.video_fps and self.video_fps > 0:
+                timestamp = (frame_count + 1) / self.video_fps
+            else:
+                timestamp = (frame_count + 1) * (1.0 / 30.0)  # Default 30 FPS estimate
 
-            # Create Frame object with metadata
-            timestamp = frame_count / self.video_fps if self.video_fps > 0 else 0
             frame = Frame(
                 data=frame_data,
-                frame_id=frame_count - 1,  # 0-indexed
+                frame_id=frame_count,  # 0-indexed
                 timestamp=timestamp,
                 source_id=str(self.source)
             )
 
-            self.frame_num = frame_count
-            should_detect = (frame_count - 1) % self.skip_frames == 0
+            self.frame_num = frame_count + 1  # 1-indexed for display
+            should_detect = frame_count % self.skip_frames == 0
 
             if should_detect:
                 # Run detection and render
                 detections, elapsed = self._detect_objects(frame)
                 self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
-                self._render_frame(frame.data, detections)
 
-                # Cache for frame skipping mode (store reference, not copy)
-                # The frame.data is already a copy from _render_frame modifications
+                # Make a copy for display to avoid mutating original frame
+                display_frame = frame.data.copy()
+                self._render_frame(display_frame, detections)
+
+                # Cache for frame skipping mode
                 if self.skip_frames > 1:
-                    cached_display_frame = frame.data
-
-                display_frame = frame.data
+                    cached_display_frame = display_frame
             else:
                 # Use cached frame (frame skipping mode)
                 display_frame = cached_display_frame
@@ -186,6 +189,9 @@ class VideoProcessor:
             # Handle keyboard input
             if self._handle_input(display_frame):
                 break
+
+            # Increment frame counter
+            frame_count += 1
 
     # =========================================================================
     # Detection Pipeline

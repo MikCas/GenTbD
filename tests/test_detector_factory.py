@@ -121,10 +121,9 @@ class TestDetectorFactory:
                 'conf_threshold': 0.5
             }
         }
-        config = Config(config_dict)
-
-        with pytest.raises(ValueError, match="Unknown detector type"):
-            DetectorFactory.create(config)
+        # Config validation now catches invalid detector types
+        with pytest.raises(ValueError, match="Invalid detection type"):
+            config = Config(config_dict)
 
     def test_create_with_logger(self):
         """Test factory uses logger for info messages."""
