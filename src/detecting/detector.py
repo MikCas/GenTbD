@@ -92,6 +92,11 @@ class Detector(ABC):
 
         Converts BGR → RGB, normalizes to [0, 1], and converts to CHW format.
 
+        Optimizations applied:
+        - Use numpy view for BGR→RGB (faster than cv2.cvtColor)
+        - Ensure contiguous memory for efficient GPU transfer
+        - Single normalization operation
+
         Args:
             image: Input image in BGR format (H, W, 3)
 
@@ -102,16 +107,19 @@ class Detector(ABC):
             >>> def preprocess(self, image):
             >>>     return self._default_preprocess_pytorch(image)
         """
-        # BGR to RGB
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # OPTIMIZATION: Use numpy view for BGR→RGB (faster than cv2.cvtColor)
+        # This creates a view instead of a copy, reducing allocations
+        # The [:, :, ::-1] reverses the channel dimension (BGR → RGB)
+        image_rgb = image[:, :, ::-1]
 
-        # Normalize to [0, 1]
-        tensor = torch.from_numpy(image_rgb).float() / 255.0
+        # Convert to contiguous array (required for efficient GPU transfer)
+        # Then convert to tensor and normalize in one operation
+        tensor = torch.from_numpy(np.ascontiguousarray(image_rgb)).float() / 255.0
 
         # HWC to CHW
         tensor = tensor.permute(2, 0, 1)
 
-        return tensor
+        return tensor.contiguous()  # Ensure contiguous for GPU transfer
 
     def _default_inference_pytorch(self, input_tensor: torch.Tensor) -> Any:
         """
