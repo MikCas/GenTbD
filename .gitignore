@@ -1,19 +1,53 @@
-__pycache__/
-data/
-models/
-gentbd/
-archive/
+# Virtual environment
+venv/
+env/
+.venv/
 
-*.gitignore
-*.log
-*.tmp
-*.swp
-*.bak
-.DS_Store
-.env
-.vscode/
-.idea/
+# Python cache
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.so
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Project specific
+output_*.mp4
+frame_*.jpg
+*.avi
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.bak
+
+# OS
+.DS_Store
+
+# Environment
+.env
 *.python-version
+
+# Logs
+*.log
+*.tmp
+
+# Data directories
+data/
+ARCHIVE/
+
+# Experiments
+experiments/*.json
+experiments/*.csv
+experiments/*.png
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/

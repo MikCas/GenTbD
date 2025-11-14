@@ -1,164 +1,348 @@
-# GenTbD: Generalised Tracking-by-Detection
+# GenTbD: Generalized Tracking-by-Detection
 
-Generalised Tracking-by-Detection (GenTbD) is a Python-based generalised framework for building **Online Multiple-Object Tracking (MOT) systems**. It provides a modular architecture for combining object detection and tracking, enabling users to create robust tracking-by-detection pipelines tailored to their needs. Inspired by the techniques implemented in current online TbD MOT algorithms such as [ByteTrack](https://github.com/ifzhang/ByteTrack), [DeepSORT](https://github.com/nwojke/deep_sort), [StrongSORT](https://github.com/dyhBUPT/StrongSORT), [SMILETrack](https://github.com/WWangYuHsiang/SMILEtrack), and [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose).
+**GenTbD** is an object detection system for video processing built on PyTorch and torchvision. It provides a flexible framework for detection-based video analysis with support for multiple detection models and extensible architecture.
 
-<div align="center" style="width: 60%; margin: auto;">
-   <img src="diagrams/simple_assignment.png" alt="Assignment" width="600">
-</div>
+> **Version**: 0.1.0
 
 ---
 
-## Key Features
+## Features
 
-- **Modular Design**: Easily integrate custom video processors, detectors, and trackers.
-- **Generalised Detection**: Supports various detector types (e.g., object detectors, keypoint detectors, Re-ID models) with generalised detections having custom similarity metrics for identity preservation.
-- **Track Lifecycle Management**: Implements a clear track lifecycle (`NEW`, `MATCHED`, `LOST`, `RESERVED`) for robust state handling.
-- **Cascaded Assignment Algorithm**: Utilises a multi-stage assignment procedure to prioritise high-confidence detections and tracks.
-- **Customisable Tracking Logic**: Modify tracking logic, association procedures, and track management to suit specific use cases.
-
----
-
-## System Overview
-
-The system consists of three core components:
-
-### 1. Temporal
-Handles video input and processes each frame. This component is responsible for managing the video source and applying detection and tracking logic frame-by-frame.
-
-- **`Temporal`**: Abstract base class for processing temporal data (e.g., videos). It provides methods for handling video playback, user input events, and frame-by-frame processing.
-- **`SimpleVideoProcessor`**: A concrete implementation of `Temporal` that integrates detection and tracking logic. It processes each frame, applies detection and tracking, and displays the results.
-
-### 2. Detector
-Performs object detection on video frames. This component abstracts the detection logic and supports various detection models. It also includes the structure and behavior of detections and their properties.
-
-- **`Detector`**: Abstract base class for detectors. Defines the interface for preprocessing, inference, and postprocessing.
-- **`YOLOv7ONNX`**: A concrete implementation of `Detector` for the YOLOv7 model in ONNX format. It handles object detection using a pre-trained YOLOv7 model.
-- **`Detection`**: Abstract base class for detections. Defines the interface for calculating similarity and visualizing detections.
-- **`ObjectDetection`**: A concrete implementation of `Detection` for object detection. It includes properties like bounding boxes, class IDs, and confidence scores.
-- **`Property`**: Abstract base class for identity-preserving properties (IPPs) and non-identity-preserving properties (NIPPs). Defines the interface for calculating similarity between properties.
-- **`BoundingBox`**: A concrete implementation of `Property` representing a bounding box in 2D space. It supports various formats (e.g., corners, center) and provides methods for calculating IoU.
-
-### 3. Tracker
-Manages and updates tracks based on detected objects. This component is responsible for associating detections with existing tracks and managing track states.
-
-- **`Track`**: Represents an individual track (object identity) in the system. It includes attributes like trajectory, Kalman filter, and state transitions.
-- **`Trajectory`**: Stores the history of detections associated with a track. It supports querying and managing the trajectory.
-- **`KalmanFilter`**: Implements a Kalman filter for smoothing predictions and handling noise in object tracking.
-- **`Partition`**: Represents the result of an association procedure, including matched and unmatched tracks/detections.
-- **`Tracker`**: Abstract base class for trackers. Defines the interface for association, track management, and lifecycle handling.
-- **`SimpleTracker`**: A concrete implementation of `Tracker` that uses cascaded assignment for associating detections with tracks.
+- **Detection Pipeline**: Standardized preprocess → inference → postprocess pattern
+- **Multiple Models**: Support for FasterRCNN, RetinaNet, and other torchvision detectors
+- **Interactive Video Processing**: Real-time video player with detection visualization and frame controls
+- **Flexible Architecture**: Extensible Detection container and custom detector support
+- **Hardware Acceleration**: CPU, CUDA (NVIDIA), and MPS (Apple Silicon) support
+- **Class Filtering**: Detect specific object classes from the COCO dataset
 
 ---
 
-### Architecture Diagram
-![Architecture](diagrams/architecture.png)
-***Conceptual architecture diagram constructed as a node network in TouchDesigner.***
-
----
-
-## Setup Instructions
-
-### Prerequisites
-
-- Python 3.8+
-- OpenCV
-- NumPy
-- ONNX Runtime (for YOLOv7 detector)
+## Quick Start
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/GenTbD.git
+   git clone https://github.com/mikhailcassar/GenTbD.git
    cd GenTbD
    ```
 
-2. Install dependencies:
+2. Create virtual environment and install dependencies:
    ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
 
-3. Download the YOLOv7 ONNX model and place it in the `models/` directory:
-   ```bash
-   mkdir models
-   # Add your model download instructions here
-   ```
+3. Add your video file to the `data/` directory (or use the default `TownCent.mp4`)
+
+### Running the Project
+
+```bash
+# Activate virtual environment (if not already active)
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Basic usage with default video
+python -m src.main --video data/TownCent.mp4
+
+# Use webcam (default camera index 0)
+python -m src.main --webcam
+
+# Use specific webcam (e.g., external camera at index 1)
+python -m src.main --webcam 1
+
+# Webcam with custom settings (detect only people)
+python -m src.main \
+    --webcam \
+    --model mobilenet \
+    --conf 0.7 \
+    --device mps \
+    --classes 1 \
+    --skip-frames 3 \
+    --save-output \
+    --verbose
+
+# Video file with custom settings
+python -m src.main \
+    --video data/your_video.mp4 \
+    --model mobilenet \
+    --conf 0.7 \
+    --device mps \
+    --classes 1 \
+    --max-dimension 640 \
+    --skip-frames 3 \
+    --save-output \
+    --verbose
+
+# For development - run tests
+pytest
+
+# For development - check test coverage
+pytest --cov=src --cov-report=html
+```
+
+**Command-line Arguments:**
+
+**Video Source (mutually exclusive):**
+
+- `--video`: Path to input video file (default: `data/TownCent.mp4` if no source specified)
+- `--webcam`: Use webcam as input (optionally specify camera index, default: 0)
+
+**Detection Settings:**
+
+- `--model`: Detection model - `resnet50` (accurate), `mobilenet` (fast), `retinanet` (default: `mobilenet`)
+- `--conf`: Detection confidence threshold 0.0-1.0 (default: `0.5`)
+- `--device`: Device for inference: `cpu`, `mps` (Apple Silicon), or `cuda` (default: `cpu`)
+- `--classes`: Filter by class IDs (e.g., `--classes 1` for people only, `--classes 1 3` for people and cars)
+
+**Processing Options:**
+
+- `--max-dimension`: Resize frames to max dimension before detection for speed (e.g., `640`)
+- `--skip-frames`: Process every Nth frame (1=all frames, 5=every 5th) (default: `1`)
+- `--save-output`: Save processed video to file
+- `--output`: Output video path (default: auto-generated `output_YYYYMMDD_HHMMSS.mp4`)
+- `--verbose`: Enable detailed logging
+
+**Interactive Controls:**
+
+- `c` - Toggle continuous/step mode
+- `SPACE` - Next frame (in step mode)
+- `s` - Save current frame as image
+- `q` - Quit
+
+### Pushing Changes to GitHub
+
+```bash
+# Check status of your changes
+git status
+
+# Stage your changes
+git add .
+
+# Commit with a descriptive message
+git commit -m "Your commit message here"
+
+# Push to GitHub
+git push origin base
+
+# If you want to push to main branch instead
+git checkout main
+git merge base
+git push origin main
+```
 
 ---
 
-## Usage Guide
+## Architecture
 
-### Running the System
-
-1. Place your video file in the `data/` directory.
-2. Place your model files (e.g., YOLOv7 ONNX model) in the `models/` directory.
-3. Update the `video_file` and `model_file` variables in `src/main.py`:
-   ```python
-   video_file = "data/your_video.mp4"
-   model_file = "models/yolov7.onnx"
-   ```
-4. Run the main script:
-   ```bash
-   python src/main.py
-   ```
-
-### User Controls
-
-Key events during video processing:
-- **`c`**: Toggle between continuous and step-by-step processing modes.
-- **`s`**: Save the current frame as an image.
-- **`q`**: Quit the video processing.
-
-There are two main track output modes:
-- **'state'**: The bounding box colour output is based on the state of the track.
-![video_state](diagrams/GenTbD_state.gif)
-- **'id'**: The bounding box colour output is unique for each track.
-![video_id](diagrams/GenTbD_id.gif)
-
----
-
-## File Structure
-
-The project directory is organised as follows:
+### Project Structure
 
 ```
 GenTbD/
-├── data/                     # Input video files
-│   └── your_video.mp4
-├── models/                   # Model files
-│   └── yolov7.onnx
-├── diagrams/                 # Diagrams and images
-│   └── GenTbD_architecture.png
-├── src/                      # Source code
-│   ├── main.py               # Main script
-│   ├── Tracking/             # Tracking modules
-│   │   ├── Track.py
-│   │   ├── Trackers/
-│   │   │   └── Tracker.py
-│   │   └── Partition.py
-│   ├── Detecting/            # Detection modules
-│   │   └── Detections/
-│   │       └── Detection.py
-│   └── Temporal/             # Temporal processing modules
-│       ├── Temporal.py
-│       └── VideoProcessor.py
-├── requirements.txt          # Python dependencies
-├── README.md                 # Project documentation
-└── LICENSE                   # License file
+├── data/                          # Input videos
+│   └── TownCent.mp4
+├── src/                           # Source code
+│   ├── main.py                    # Main entry point
+│   ├── video_processor.py         # VideoProcessor class
+│   └── detecting/                 # Detection system
+│       ├── detector.py            # Base Detector ABC
+│       ├── detection.py           # Detection result container
+│       ├── detectors/             # Concrete implementations
+│       │   └── object_detector.py # FasterRCNN/RetinaNet
+│       └── properties/            # Detection properties
+│           └── bounding_box.py    # BBox wrapper
+├── requirements.txt               # Dependencies
+└── README.md                      # This file
+```
+
+### Detection System
+
+The detection system follows an extensible architecture:
+
+**1. Detector (Base Class)**
+- Defines standard pipeline: `preprocess()` → `inference()` → `postprocess()` → `detect()`
+- Abstract base class for implementing custom detectors
+
+**2. ObjectDetector (Implementation)**
+- Supports multiple torchvision models (FasterRCNN, RetinaNet)
+- Factory methods: `from_fasterrcnn_resnet50()`, `from_retinanet()`, `from_pretrained()`
+- Full CPU/GPU/MPS device support
+
+**3. Detection (Result Container)**
+- Dict-like container for detection properties
+- Standard properties: `bbox`, `class_id`, `confidence`
+- Extensible for additional properties (keypoints, embeddings, custom features)
+
+**4. BoundingBox**
+- PyTorch tensor-based bounding box representation
+- Methods: `iou()` for IoU calculation, `draw()` for visualization, `xyxy` property for coordinates
+
+---
+
+## Usage Examples
+
+### Basic Detection
+
+```python
+from src.detecting.detectors import ObjectDetector
+import cv2
+
+# Load detector
+detector = ObjectDetector.from_fasterrcnn_resnet50(
+    device='cpu',
+    conf_threshold=0.5,
+    classes=[1]  # Only detect people
+)
+
+# Detect on image
+frame = cv2.imread('image.jpg')
+detections = detector.detect(frame)
+
+# Access results
+for det in detections:
+    bbox = det['bbox']           # BoundingBox object
+    class_id = det['class_id']   # int
+    confidence = det['confidence'] # float
+
+    # Draw bounding box
+    bbox.draw(frame, color=(0, 255, 0))
+```
+
+### Video Processing
+
+```python
+from src.video_processor import VideoProcessor
+from src.detecting.detectors import ObjectDetector
+
+# Setup detector
+detector = ObjectDetector.from_fasterrcnn_resnet50(device='mps')
+
+# Create video processor
+processor = VideoProcessor(
+    video_path='data/video.mp4',
+    detector=detector,
+    save_output=True
+)
+
+# Process video with interactive controls
+processor.run()
+```
+
+### Custom Detector
+
+Implement your own detector by subclassing the `Detector` base class:
+
+```python
+from src.detecting.detector import Detector
+from src.detecting.detection import Detection
+from src.detecting.properties.bounding_box import BoundingBox
+import torch
+
+class MyDetector(Detector):
+    def preprocess(self, image):
+        # Convert BGR image to model input format
+        return torch.from_numpy(image).permute(2, 0, 1).float() / 255.0
+
+    def inference(self, input_tensor):
+        # Run your model
+        return self.model(input_tensor)
+
+    def postprocess(self, output, image_shape):
+        # Convert model output to Detection objects
+        detections = []
+        for box, score, class_id in zip(output['boxes'], output['scores'], output['labels']):
+            det = Detection({
+                'bbox': BoundingBox(*box.tolist()),
+                'confidence': float(score),
+                'class_id': int(class_id)
+            })
+            detections.append(det)
+        return detections
 ```
 
 ---
 
-## Future Work
+## COCO Class IDs
 
-- Update requirements and readme.
-- Provide detailed documentation.
-- Define system parameters for the base version in main and create a simpler interface.
-- Add support for appearance-based tracking using Re-ID models.
-- Implement keypoint-based tracking for human pose estimation.
-- Introduce weighted sum and gating thresholds for feature fusion.
+The detectors support the 80 classes from the COCO dataset. Common class IDs for filtering:
+
+- `1` - person
+- `2` - bicycle
+- `3` - car
+- `5` - airplane
+- `7` - train
+- `16` - dog
+- `17` - cat
+
+For the complete list of 80 classes, see the [COCO dataset documentation](https://cocodataset.org/#explore).
+
+---
+
+## Performance Notes
+
+### Device Selection
+
+- **CPU**: ~1-2 FPS on M-series Macs, good for development
+- **MPS** (Apple Silicon): ~8-15 FPS, recommended for production
+- **CUDA** (NVIDIA GPU): Fastest, recommended if available
+
+### Model Selection
+
+- **FasterRCNN ResNet50**: Most accurate, slower (~50-100ms/frame on GPU)
+- **FasterRCNN MobileNet**: Faster, slightly less accurate
+- **RetinaNet**: Good balance of speed and accuracy
+
+### Optimization Tips
+
+1. **Frame skipping**: Process every Nth frame for speed
+2. **Lower resolution**: Resize frames before detection
+3. **Confidence threshold**: Higher threshold = fewer false positives
+4. **Class filtering**: Only detect specific classes
+
+---
+
+## Future Roadmap
+
+Planned enhancements for future versions:
+
+- [ ] **Tracking System**: Multi-object tracking with ID persistence across frames
+- [ ] **Keypoint Detection**: Human pose estimation and keypoint tracking
+- [ ] **ReID Features**: Appearance-based re-identification for tracking
+- [ ] **Batch Processing**: Multi-frame batch inference for improved throughput
+- [ ] **Model Zoo**: Additional pre-trained detector models
+- [ ] **Unit Tests**: Comprehensive test coverage
+- [ ] **API Documentation**: Complete API reference and tutorials
+
+---
+
+## Contributing
+
+Contributions are welcome! To contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Make your changes
+4. Run tests (once available)
+5. Submit a pull request
+
+Please ensure your code follows the existing architecture patterns and includes appropriate documentation.
 
 ---
 
 ## License
+
 This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+---
+
+## Acknowledgments
+
+Inspired by modern MOT systems:
+- [ByteTrack](https://github.com/ifzhang/ByteTrack)
+- [DeepSORT](https://github.com/nwojke/deep_sort)
+- [StrongSORT](https://github.com/dyhBUPT/StrongSORT)
+
+Built with:
+- [PyTorch](https://pytorch.org/)
+- [torchvision](https://pytorch.org/vision/)
+- [OpenCV](https://opencv.org/)

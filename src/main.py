@@ -1,80 +1,137 @@
-from Detecting.Detectors.Detector_ONNX_YOLO7 import YOLOv7ONNX
-from Tracking.Trackers.SimpleTracker import SimpleTracker
-from Temporal.VideoProcessor import SimpleVideoProcessor
+"""Video detection processor - main entry point.
 
+Usage:
+    python -m src.main --video data/TownCent.mp4
+    python -m src.main --video data/TownCent.mp4 --conf 0.7 --save-output
+
+Controls:
+    c      - Toggle continuous/step mode
+    SPACE  - Next frame (in step mode)
+    s      - Save current frame as image
+    q      - Quit
+"""
+
+import argparse
 import logging
-import os
+from .video_processor import VideoProcessor
+from .detecting import DetectorFactory
+from .config import Config
 
-def setup_logger():
-    """
-    Sets up the logger for the application.
+logger = logging.getLogger(__name__)
 
-    Returns:
-        logging.Logger: Configured logger instance.
-    """
-    logger = logging.getLogger('System_Logger')
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')  # Log message format
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    return logger
+def setup_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Video detection processor',
+        epilog='Controls: c=toggle mode | SPACE=next frame | s=save frame | q=quit'
+    )
+    # Configuration file
+    parser.add_argument('--config', type=str, default=None,
+                       help='Path to YAML config file (default: config/default.yaml)')
+
+    # Video source arguments (mutually exclusive: video file or webcam)
+    source_group = parser.add_mutually_exclusive_group()
+    source_group.add_argument('--video', type=str, default=None,
+                             help='Path to input video file')
+    source_group.add_argument('--webcam', type=int, nargs='?', const=0, default=None,
+                             help='Use webcam as input (optionally specify camera index, default: 0)')
+
+    # Video processor arguments
+    parser.add_argument('--max-dimension', type=int, default=None,
+                       help='Resize frames to max dimension before detection (e.g., 640 for speed)')
+    parser.add_argument('--skip-frames', type=int, default=1,
+                       help='Process every Nth frame (1=all frames, 5=every 5th frame)')
+    parser.add_argument('--save-output', action='store_true',
+                       help='Save output video')
+    parser.add_argument('--output', default=None,
+                       help='Output video path (default: output_YYYYMMDD_HHMMSS.mp4)')
+
+    # Detector arguments
+    parser.add_argument('--detector-type', type=str, default=None, choices=['object', 'keypoint'],
+                       help='Detector type: object (default) or keypoint (human pose)')
+    parser.add_argument('--model', default=None,
+                       help='Detection model: resnet50, mobilenet, retinanet (object); resnet50 (keypoint)')
+    parser.add_argument('--conf', type=float, default=None,
+                       help='Detection confidence threshold (0.0-1.0)')
+    parser.add_argument('--device', default=None,
+                       help='Device for detection: cpu, mps, or cuda')
+    parser.add_argument('--classes', type=int, nargs='+', default=None,
+                       help='Filter by class IDs (e.g., --classes 1 for people only) - object detector only')
+
+    # Logger arguments
+    parser.add_argument('--verbose', action='store_true',
+                       help='Enable verbose logging')
+    return parser.parse_args()
+
+
+def setup_logging(verbose):
+    """Configure logging based on verbosity level."""
+    logging.basicConfig(
+        level=logging.INFO if verbose else logging.WARNING,
+        format='%(levelname)s: %(message)s'
+    )
+
+def main():
+    """Main entry point for video processing with detection."""
+    args = setup_arguments()
+
+    # Load configuration (config file + command-line args)
+    if args.config:
+        config = Config.from_yaml(args.config)
+        logger.info(f"Loaded config from: {args.config}")
+    else:
+        config = Config.from_default()
+        logger.info("Using default configuration")
+
+    # Merge command-line arguments (they take precedence)
+    config.merge_args(args)
+
+    # Setup logging
+    verbose = config.get('logging.verbose', False)
+    setup_logging(verbose)
+
+    # Get configuration values
+    source = config.get('video.source', 'data/TownCent.mp4')
+    detector_type = config.get('detection.type', 'object')
+    device = config.get('detection.device', 'cpu')
+    conf_threshold = config.get('detection.conf_threshold', 0.5)
+    max_dimension = config.get('video.max_dimension', None)
+    skip_frames = config.get('video.skip_frames', 1)
+    save_output = config.get('video.save_output', False)
+    output_path = config.get('video.output_path', None)
+
+    # Log source
+    if isinstance(source, int):
+        logger.info(f"Using webcam (camera index: {source})")
+    else:
+        logger.info(f"Using video source: {source}")
+
+    # Setup detector using factory
+    logger.info(f"Loading {detector_type} detector...")
+    try:
+        detector = DetectorFactory.create(config, logger)
+    except Exception as e:
+        logger.error(f"Failed to load detector: {e}", exc_info=verbose)
+        return
+
+    # Setup and run video processor
+    try:
+        processor = VideoProcessor(
+            source=source,
+            detector=detector,
+            save_output=save_output,
+            output_path=output_path,
+            max_dimension=max_dimension,
+            skip_frames=skip_frames
+        )
+        processor.run()
+    except ValueError as e:
+        logger.error(f"{e}", exc_info=verbose)
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user")
+    except Exception as e:
+        logger.error(f"Error during processing: {e}", exc_info=True)
+        raise
 
 if __name__ == '__main__':
-    """
-    Main entry point of the application.
-
-    This script performs the following:
-    1. Initialises the logger.
-    2. Configures the object detector.
-    3. Configures the tracker.
-    4. Sets up the video processor.
-    5. Processes the video file to detect and track objects.q
-    """
-
-    ##### 1. LOGGER #####
-    logger = setup_logger()
-
-    ##### 3. DETECTOR #####
-    model_path = 'models/yolov7_640x640.onnx'
-    confidence_threshold = 0.1
-    iou_threshold = 0.5
-    classes = [0]
-    detector = YOLOv7ONNX(
-        model_path,
-        confidence_threshold=confidence_threshold,
-        iou_threshold=iou_threshold,
-        classes=classes,
-        logger=logger
-    )
-
-    ##### 4. TRACKER #####
-    detection_threshold = 0.3
-    creation_threshold = 0.3
-    match_thresholds = [0.4, 0.2, 0.2]
-    activation_threshold = 10
-    deactivation_threshold = 15
-
-    tracker = SimpleTracker( 
-        detection_threshold=detection_threshold,
-        creation_threshold=creation_threshold,
-        activation_threshold=activation_threshold, 
-        deactivation_threshold=deactivation_threshold,
-        match_thresholds=match_thresholds,
-        logger=logger
-    )
-
-    ##### 4. VIDEO SETUP #####
-    video_file = 'TownCent.mp4'
-    video_path = os.path.join(os.getcwd(), 'data', video_file)
-    draw_mode = 'state'  # Options: 'state', 'id', 'none'   
-
-    vp = SimpleVideoProcessor(video_path=video_path, 
-                              detector=detector, 
-                              tracker=tracker, 
-                              draw_mode=draw_mode,
-                              logger=logger)
-    
-    vp.process()
-
-
+    main()
