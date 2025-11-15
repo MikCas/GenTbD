@@ -86,17 +86,27 @@ avg_time = sum(times[1:]) / len(times[1:])  # Skip first
 print(f"\n   Average (excluding first): {avg_time:.1f}ms")
 print(f"   Expected FPS: {1000/avg_time:.1f}")
 
-# Compare with full resolution
-print(f"\n5. Comparing with full resolution...")
-t0 = time.time()
-_ = detector.detect(frame)
-full_res_time = (time.time() - t0) * 1000
-
-print(f"   Full res ({original_w}x{original_h}): {full_res_time:.1f}ms ({1000/full_res_time:.1f} FPS)")
+# Compare with baseline (no optimization)
+print(f"\n5. Comparing BEFORE vs AFTER fix...")
 if args.max_dimension:
-    speedup = full_res_time / avg_time
-    print(f"   Resized ({test_frame.shape[1]}x{test_frame.shape[0]}): {avg_time:.1f}ms ({1000/avg_time:.1f} FPS)")
+    print("   Creating baseline detector (model defaults: min_size=800)...")
+    baseline_detector = ObjectDetector(model='mobilenet', device=args.device, conf_threshold=0.5)
+
+    # Test baseline on resized frame (model will resize internally to 800px)
+    baseline_times = []
+    for i in range(5):
+        t0 = time.time()
+        _ = baseline_detector.detect(test_frame)
+        baseline_times.append((time.time() - t0) * 1000)
+
+    baseline_avg = sum(baseline_times[1:]) / len(baseline_times[1:])
+    speedup = baseline_avg / avg_time
+
+    print(f"   BEFORE (640x360 → model resizes to ~800px): {baseline_avg:.1f}ms ({1000/baseline_avg:.1f} FPS)")
+    print(f"   AFTER  (640x360 stays at 640x360):        {avg_time:.1f}ms ({1000/avg_time:.1f} FPS)")
     print(f"   Speedup: {speedup:.1f}x")
+else:
+    print("   Skipped (no max_dimension set)")
 
 # Check if flags are being used
 print(f"\n6. Checking if your command would work...")
