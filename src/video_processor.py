@@ -148,31 +148,17 @@ class VideoProcessor:
             if not ret:
                 break
 
-            # Create Frame object with metadata (0-indexed)
-            # Handle video_fps = 0 or None (some webcams/codecs)
-            if self.video_fps and self.video_fps > 0:
-                timestamp = (frame_count + 1) / self.video_fps
-            else:
-                timestamp = (frame_count + 1) * (1.0 / 30.0)  # Default 30 FPS estimate
-
-            frame = Frame(
-                data=frame_data,
-                frame_id=frame_count,  # 0-indexed
-                timestamp=timestamp,
-                source_id=str(self.source)
-            )
-
+            # Frame tracking (optimized - no Frame object overhead)
             self.frame_num = frame_count + 1  # 1-indexed for display
             should_detect = frame_count % self.skip_frames == 0
 
             if should_detect:
-                # Run detection and render
-                detections, elapsed = self._detect_objects(frame)
+                # Run detection and render directly on frame data (no copies)
+                detections, elapsed = self._detect_objects(frame_data)
                 self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
 
-                # Make a copy for display to avoid mutating original frame
-                # display_frame = frame.data.copy()
-                display_frame = frame.data
+                # Render directly on frame data (in-place)
+                display_frame = frame_data
                 self._render_frame(display_frame, detections)
 
                 # Cache for frame skipping mode
@@ -198,32 +184,40 @@ class VideoProcessor:
     # Detection Pipeline
     # =========================================================================
 
-    def _detect_objects(self, frame: Frame):
+    def _detect_objects(self, frame_data):
         """Run object detection on frame.
 
-        Handles frame resizing and bounding box scaling automatically using Frame abstraction.
+        Handles frame resizing and bounding box scaling (optimized - no Frame wrapper).
 
         Args:
-            frame: Input Frame object with metadata
+            frame_data: Raw frame data (H, W, C) BGR numpy array
 
         Returns:
             Tuple of (detections, elapsed_time)
         """
         start_time = time.time()
 
-        # Scale frame for detection if requested (Frame handles scaling)
-        if self.max_dimension and max(frame.height, frame.width) > self.max_dimension:
-            scale = self.max_dimension / max(frame.height, frame.width)
-            detection_frame = frame.scaled(scale)
+        # Resize frame if needed (direct, no Frame wrapper overhead)
+        if self.max_dimension:
+            h, w = frame_data.shape[:2]
+            if max(h, w) > self.max_dimension:
+                scale = self.max_dimension / max(h, w)
+                new_w, new_h = int(w * scale), int(h * scale)
+                detection_data = cv2.resize(frame_data, (new_w, new_h))
+                scale_factor = scale
+            else:
+                detection_data = frame_data
+                scale_factor = 1.0
         else:
-            detection_frame = frame
+            detection_data = frame_data
+            scale_factor = 1.0
 
-        # Run detection on frame data
-        detections = self.detector.detect(detection_frame.data)
+        # Run detection
+        detections = self.detector.detect(detection_data)
 
-        # Scale detections back if frame was scaled
-        if detection_frame.scale_factor != 1.0:
-            detections = self._scale_detections(detections, detection_frame.scale_factor)
+        # Scale detections back if needed
+        if scale_factor != 1.0:
+            detections = self._scale_detections(detections, scale_factor)
 
         elapsed = time.time() - start_time
         return detections, elapsed
