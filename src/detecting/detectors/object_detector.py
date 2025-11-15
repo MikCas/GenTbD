@@ -85,6 +85,11 @@ class ObjectDetector(Detector):
         Returns:
             List of Detection objects with 'bbox', 'class_id', 'confidence'
         """
+
+        if len(output['scores']) == 0:
+            return []
+
+
         boxes = output['boxes'].cpu()
         labels = output['labels'].cpu()
         scores = output['scores'].cpu()
@@ -96,23 +101,26 @@ class ObjectDetector(Detector):
         scores = scores[mask]
 
         # Filter by class IDs if specified
+        # if self.classes is not None:
+        #     class_mask = torch.zeros(len(labels), dtype=torch.bool)
+        #     for class_id in self.classes:
+        #         class_mask |= (labels == class_id)
+        #     boxes = boxes[class_mask]
+        #     labels = labels[class_mask]
+        #     scores = scores[class_mask]
+
         if self.classes is not None:
-            class_mask = torch.zeros(len(labels), dtype=torch.bool)
-            for class_id in self.classes:
-                class_mask |= (labels == class_id)
-            boxes = boxes[class_mask]
-            labels = labels[class_mask]
-            scores = scores[class_mask]
+            class_mask = torch.isin(labels, torch.tensor(self.classes))
 
         # Create Detection objects
-        detections = []
-        for box, label, score in zip(boxes, labels, scores):
-            x1, y1, x2, y2 = box.tolist()
-            detection = Detection({
-                'bbox': BoundingBox(x1, y1, x2, y2),
+        detections = [
+            Detection({
+                'bbox': BoundingBox(*box.tolist()),
                 'class_id': int(label),
                 'confidence': float(score)
             })
-            detections.append(detection)
+            for box, label, score in zip(boxes, labels, scores)
+        ]
+
 
         return detections

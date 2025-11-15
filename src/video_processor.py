@@ -171,7 +171,8 @@ class VideoProcessor:
                 self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
 
                 # Make a copy for display to avoid mutating original frame
-                display_frame = frame.data.copy()
+                # display_frame = frame.data.copy()
+                display_frame = frame.data
                 self._render_frame(display_frame, detections)
 
                 # Cache for frame skipping mode
