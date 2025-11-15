@@ -21,7 +21,8 @@ class ObjectDetector(Detector):
         'retinanet': retinanet_resnet50_fpn,
     }
 
-    def __init__(self, model='mobilenet', device='cpu', conf_threshold=0.5, classes=None):
+    def __init__(self, model='mobilenet', device='cpu', conf_threshold=0.5, classes=None,
+                 min_size=None, max_size=None):
         """Initialize object detector with specified model.
 
         Args:
@@ -29,6 +30,8 @@ class ObjectDetector(Detector):
             device: 'cpu', 'mps' or 'cuda'
             conf_threshold: Minimum confidence for detections
             classes: List of class IDs to filter (None = all classes)
+            min_size: Minimum image size for model (None = use model default 800)
+            max_size: Maximum image size for model (None = use model default 1333)
 
         Raises:
             ValueError: If model name is not recognized
@@ -41,11 +44,22 @@ class ObjectDetector(Detector):
         model_fn = self.MODELS[model]
         loaded_model = model_fn(weights='DEFAULT')
 
+        # Override internal resize if specified
+        if min_size is not None or max_size is not None:
+            # Access the transform inside the model
+            if hasattr(loaded_model, 'transform'):
+                if min_size is not None:
+                    loaded_model.transform.min_size = (min_size,)
+                if max_size is not None:
+                    loaded_model.transform.max_size = max_size
+
         # Initialize parent class
         super().__init__(loaded_model, device, conf_threshold)
 
         # Store class filter
-        self.classes = classes 
+        self.classes = classes
+        self.min_size = min_size
+        self.max_size = max_size 
 
     def preprocess(self, image: np.ndarray) -> torch.Tensor:
         """Convert BGR image to RGB tensor normalized to [0, 1].

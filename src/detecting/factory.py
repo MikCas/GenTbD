@@ -144,11 +144,26 @@ class DetectorFactory:
         model = config.get('detection.model', 'mobilenet')
         classes = config.get('detection.classes', None)
 
+        # Get resize parameters (important for performance!)
+        # If max_dimension is set, disable model's internal resize
+        max_dimension = config.get('video.max_dimension', None)
+        if max_dimension:
+            # Set min_size and max_size to match our manual resize
+            # This prevents the model from resizing back up to 800px!
+            min_size = max_dimension
+            max_size = max_dimension
+        else:
+            # Use model defaults (min_size=800, max_size=1333)
+            min_size = None
+            max_size = None
+
         detector = ObjectDetector(
             model=model,
             device=device,
             conf_threshold=conf_threshold,
-            classes=classes
+            classes=classes,
+            min_size=min_size,
+            max_size=max_size
         )
 
         if logger:
@@ -159,6 +174,9 @@ class DetectorFactory:
                 )
             else:
                 logger.info(f"Object detector ({model}) loaded on device: {device}")
+
+            if min_size:
+                logger.info(f"Internal resize disabled (min_size={min_size}, max_size={max_size})")
 
         return detector
 
