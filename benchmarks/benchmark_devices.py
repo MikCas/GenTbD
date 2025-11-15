@@ -69,15 +69,31 @@ def benchmark_device(device, video_path, num_frames=50, warmup=5):
 
     frame_count = 0
 
-    while frame_count < num_frames + warmup:
+    # MPS needs longer warmup due to shader compilation
+    actual_warmup = warmup if device != 'mps' else max(warmup, 10)
+
+    while frame_count < num_frames + actual_warmup:
         ret, frame = cap.read()
         if not ret:
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Loop
             continue
 
         # Warmup
-        if frame_count < warmup:
+        if frame_count < actual_warmup:
+            if frame_count == 0 and device == 'mps':
+                logger.info("⚠️  First MPS inference (compiling shaders, ~30-60s)")
+                logger.info("   Please wait, this is normal...")
+
+            t_warmup = time.time()
             detector.detect(frame)
+            warmup_time = time.time() - t_warmup
+
+            if frame_count == 0:
+                logger.info(f"   First inference: {warmup_time*1000:.0f}ms")
+
+            if (frame_count + 1) % 5 == 0 and frame_count > 0:
+                logger.info(f"   Warmup: {frame_count + 1}/{actual_warmup}")
+
             frame_count += 1
             continue
 
@@ -95,10 +111,13 @@ def benchmark_device(device, video_path, num_frames=50, warmup=5):
             output = detector.inference(input_tensor)
 
         # Synchronize for accurate timing
-        if device == 'mps':
-            torch.mps.synchronize()
-        elif device == 'cuda':
-            torch.cuda.synchronize()
+        try:
+            if device == 'mps':
+                torch.mps.synchronize()
+            elif device == 'cuda':
+                torch.cuda.synchronize()
+        except Exception as e:
+            logger.warning(f"Synchronization failed: {e}")
 
         inference_time = time.time() - t_inf
 
