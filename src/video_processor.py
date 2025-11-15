@@ -120,6 +120,9 @@ class VideoProcessor:
         if self.save_output:
             self._setup_output_writer(width, height)
 
+        # Warmup detector (especially important for MPS shader compilation)
+        self._warmup_detector()
+
     def _setup_output_writer(self, width, height):
         """Setup video output writer.
 
@@ -137,6 +140,47 @@ class VideoProcessor:
             raise ValueError(f"Could not open video writer: {self.output_path}")
 
         logger.info(f"Saving to: {self.output_path}")
+
+    def _warmup_detector(self):
+        """Warmup detector to compile shaders (MPS) and optimize inference."""
+        # Check if detector needs warmup (MPS device)
+        device = getattr(self.detector, 'device', 'cpu')
+
+        if device == 'mps':
+            logger.info("Warming up MPS detector (compiling shaders, ~30-60s)...")
+            logger.info("Please wait, this only happens once...")
+
+            # Read a frame for warmup
+            ret, frame = self.cap.read()
+            if not ret:
+                logger.warning("Could not read frame for warmup")
+                return
+
+            # Run several warmup iterations
+            import time
+            warmup_times = []
+            for i in range(5):
+                t0 = time.time()
+                _ = self.detector.detect(frame)
+                elapsed = time.time() - t0
+                warmup_times.append(elapsed)
+
+                if i == 0:
+                    logger.info(f"  First inference: {elapsed*1000:.0f}ms (shader compilation)")
+                elif i == 4:
+                    logger.info(f"  Final warmup: {elapsed*1000:.0f}ms")
+
+            # Reset video to start
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+            avg_time = sum(warmup_times[1:]) / len(warmup_times[1:])  # Skip first
+            logger.info(f"Warmup complete! Expected speed: {1000/avg_time:.1f}ms per frame ({1/avg_time:.1f} FPS)")
+        else:
+            # CPU/CUDA - minimal warmup
+            ret, frame = self.cap.read()
+            if ret:
+                _ = self.detector.detect(frame)
+                self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     def _process_loop(self):
         """Main processing loop - read frames, detect, visualize, handle input."""
