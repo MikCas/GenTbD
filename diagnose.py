@@ -21,10 +21,21 @@ print("="*60)
 print("DIAGNOSTIC CHECK")
 print("="*60)
 
-# Create detector
+# Create detector WITH the fix (disable internal resize)
 print(f"\n1. Creating detector on {args.device}...")
-detector = ObjectDetector(model='mobilenet', device=args.device, conf_threshold=0.5)
-print(f"   ✓ Detector created")
+if args.max_dimension:
+    # Apply the fix: set min_size to prevent internal resize to 800px
+    detector = ObjectDetector(
+        model='mobilenet',
+        device=args.device,
+        conf_threshold=0.5,
+        min_size=args.max_dimension,
+        max_size=args.max_dimension
+    )
+    print(f"   ✓ Detector created (internal resize disabled: min_size={args.max_dimension})")
+else:
+    detector = ObjectDetector(model='mobilenet', device=args.device, conf_threshold=0.5)
+    print(f"   ✓ Detector created (using model defaults)")
 
 # Open video
 print(f"\n2. Opening video: {args.video}")
