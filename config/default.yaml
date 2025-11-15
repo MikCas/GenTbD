@@ -3,14 +3,14 @@
 # Video source settings
 video:
   source: "data/TownCent.mp4"  # Path to video file, camera index (0, 1), or RTSP URL
-  max_dimension: null          # Resize frames to max dimension (null = no resize)
-  skip_frames: 1               # Process every Nth frame (1 = all frames)
+  max_dimension: 640           # Resize frames to max dimension (640 = 6x speedup, null = no resize)
+  skip_frames: 3               # Process every Nth frame (3 = 3x speedup, 1 = all frames)
   save_output: false           # Save processed video
   output_path: null            # Output path (null = auto-generate)
 
 # Detection settings
 detection:
-  type: "object"               # Detector type: "object", "keypoint", or "reid"
+  type: "object"               # Detector type: "object", "keypoint", "reid"
   model: "mobilenet"           # Model: resnet50, mobilenet, retinanet (for object)
                                #        resnet50 (for keypoint)
                                #        osnet_x1_0, osnet_x0_75, osnet_x0_5, resnet50 (for reid)

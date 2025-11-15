@@ -109,9 +109,9 @@ class Config:
             self.set('video.source', args.video)
 
         # Video processing
-        if hasattr(args, 'max_dimension') and args.max_dimension:
+        if hasattr(args, 'max_dimension') and args.max_dimension is not None:
             self.set('video.max_dimension', args.max_dimension)
-        if hasattr(args, 'skip_frames') and args.skip_frames:
+        if hasattr(args, 'skip_frames') and args.skip_frames is not None:
             self.set('video.skip_frames', args.skip_frames)
         if hasattr(args, 'save_output') and args.save_output:
             self.set('video.save_output', args.save_output)

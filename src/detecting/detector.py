@@ -109,7 +109,7 @@ class Detector(ABC):
         tensor = torch.from_numpy(image_rgb).float() / 255.0
 
         # HWC to CHW
-        tensor = tensor.permute(2, 0, 1)
+        tensor = tensor.permute(2, 0, 1).contiguous()
 
         return tensor
 

@@ -68,7 +68,7 @@ class VideoProcessor:
 
         # State
         self.frame_num = 0
-        self.continuous_mode = False
+        self.continuous_mode = True  # Start in continuous mode for performance
         # Use deque with maxlen to prevent unbounded growth
         self.fps_samples = deque(maxlen=FPS_WINDOW)
         self.window_name = 'Video Tracking'
@@ -170,9 +170,9 @@ class VideoProcessor:
                 detections, elapsed = self._detect_objects(frame)
                 self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
 
-                # Make a copy for display to avoid mutating original frame
-                display_frame = frame.data.copy()
-                self._render_frame(display_frame, detections)
+                # Render frame with detections (in-place for performance)
+                self._render_frame(frame.data, detections)
+                display_frame = frame.data
 
                 # Cache for frame skipping mode
                 if self.skip_frames > 1:
@@ -181,10 +181,11 @@ class VideoProcessor:
                 # Use cached frame (frame skipping mode)
                 display_frame = cached_display_frame
 
-            # Display and save
-            self._show_frame(display_frame)
-            if self.out:
-                self.out.write(display_frame)
+            # Display and save (only if frame available)
+            if display_frame is not None:
+                self._show_frame(display_frame)
+                if self.out:
+                    self.out.write(display_frame)
 
             # Handle keyboard input
             if self._handle_input(display_frame):
