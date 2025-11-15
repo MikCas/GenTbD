@@ -115,16 +115,11 @@ class ObjectDetector(Detector):
         scores = scores[mask]
 
         # Filter by class IDs if specified
-        # if self.classes is not None:
-        #     class_mask = torch.zeros(len(labels), dtype=torch.bool)
-        #     for class_id in self.classes:
-        #         class_mask |= (labels == class_id)
-        #     boxes = boxes[class_mask]
-        #     labels = labels[class_mask]
-        #     scores = scores[class_mask]
-
         if self.classes is not None:
             class_mask = torch.isin(labels, torch.tensor(self.classes))
+            boxes = boxes[class_mask]
+            labels = labels[class_mask]
+            scores = scores[class_mask]
 
         # Create Detection objects
         detections = [
