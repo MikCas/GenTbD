@@ -13,13 +13,13 @@ Usage:
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 import torch
 import numpy as np
-from detecting.detectors import ObjectDetector
+from src.detecting.detectors import ObjectDetector
 
 
 # ============================================================================

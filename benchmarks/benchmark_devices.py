@@ -10,14 +10,14 @@ Usage:
 import sys
 from pathlib import Path
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import time
 import torch
 import cv2
 import numpy as np
-from detecting.detectors import ObjectDetector
+from src.detecting.detectors import ObjectDetector
 import logging
 
 logging.basicConfig(level=logging.INFO)
