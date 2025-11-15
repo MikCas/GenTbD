@@ -1,0 +1,18 @@
+# Benchmarking and profiling tools for GenTbD
+#
+# Install with: pip install -r benchmarks/requirements.txt
+
+# Automated benchmarking with statistics
+pytest-benchmark>=4.0.0
+
+# Low-overhead profiler (flamegraphs)
+py-spy>=0.3.14
+
+# Line-by-line profiling
+line-profiler>=4.0.0
+
+# Memory profiling
+memory-profiler>=0.61.0
+
+# Additional utilities
+psutil>=5.9.0  # System resource monitoring
