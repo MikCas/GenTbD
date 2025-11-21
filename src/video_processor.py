@@ -50,13 +50,26 @@ class VideoProcessor:
             output_path: Output video path (auto-generated if None)
             max_dimension: Resize frames to this max dimension before detection (None = no resize)
             skip_frames: Process every Nth frame (1 = all frames, 5 = every 5th)
+
+        Raises:
+            ValueError: If max_dimension or skip_frames are invalid
         """
+        # Validate inputs
+        if max_dimension is not None and max_dimension <= 0:
+            raise ValueError(f"max_dimension must be positive, got {max_dimension}")
+        if skip_frames <= 0:
+            raise ValueError(f"skip_frames must be positive, got {skip_frames}")
+        if skip_frames > 100:
+            logger.warning(
+                f"skip_frames={skip_frames} is very high - most frames will be skipped"
+            )
+
         self.source = source
         self.detector = detector
         self.save_output = save_output
         self.output_path = output_path
         self.max_dimension = max_dimension
-        self.skip_frames = max(1, skip_frames)
+        self.skip_frames = skip_frames
 
         # Video resources
         self.cap = None
@@ -90,7 +103,11 @@ class VideoProcessor:
         """Setup video capture and optional output writer."""
         # Handle different source types (file path, camera index, RTSP URL)
         if isinstance(self.source, int):
-            # Camera index (0, 1, etc.)
+            # Camera index (0, 1, etc.) - validate range
+            if self.source < 0 or self.source > 10:
+                raise ValueError(
+                    f"Invalid webcam index: {self.source}. Must be between 0 and 10."
+                )
             self.cap = cv2.VideoCapture(self.source)
         elif self.source.startswith(('rtsp://', 'http://', 'https://')):
             # RTSP or HTTP stream
@@ -140,10 +157,13 @@ class VideoProcessor:
 
     def _process_loop(self):
         """Main processing loop - read frames, detect, visualize, handle input."""
-        cached_display_frame = None
         frame_count = 0  # 0-indexed frame counter
+        detections = []  # Persist detections between frames
 
         while True:
+            # Start timing for full loop (accurate FPS measurement)
+            loop_start_time = time.time()
+            
             ret, frame_data = self.cap.read()
             if not ret:
                 break
@@ -166,20 +186,13 @@ class VideoProcessor:
             should_detect = frame_count % self.skip_frames == 0
 
             if should_detect:
-                # Run detection and render
-                detections, elapsed = self._detect_objects(frame)
-                self.fps_samples.append(1.0 / elapsed if elapsed > 0 else 0)
+                # Run detection (no need to time separately anymore)
+                detections, _ = self._detect_objects(frame)
 
-                # Render frame with detections (in-place for performance)
-                self._render_frame(frame.data, detections)
-                display_frame = frame.data
-
-                # Cache for frame skipping mode
-                if self.skip_frames > 1:
-                    cached_display_frame = display_frame
-            else:
-                # Use cached frame (frame skipping mode)
-                display_frame = cached_display_frame
+            # Always render (current or cached) detections on the NEW frame
+            # This prevents flickering by showing the last known detections on skipped frames
+            display_frame = frame.data.copy()
+            self._render_frame(display_frame, detections)
 
             # Display and save (only if frame available)
             if display_frame is not None:
@@ -190,6 +203,10 @@ class VideoProcessor:
             # Handle keyboard input
             if self._handle_input(display_frame):
                 break
+
+            # Calculate full loop FPS (detection + rendering + display)
+            loop_time = time.time() - loop_start_time
+            self.fps_samples.append(1.0 / loop_time if loop_time > 0 else 0)
 
             # Increment frame counter
             frame_count += 1
@@ -260,10 +277,18 @@ class VideoProcessor:
             detections: List of Detection objects to render
             tracks: List of Track objects to render (future)
         """
+        from .core.properties.bounding_box import COCO_CLASSES
+        
         # Draw detections and keypoints
         for det in detections:
-            # Draw bounding box
-            det['bbox'].draw(frame, color=(0, 255, 0))
+            # Build label with class name and confidence
+            class_id = det.get('class_id', -1)
+            class_name = COCO_CLASSES.get(class_id, f'Class_{class_id}')
+            confidence = det.get('confidence', 0.0)
+            label = f"{class_name} {confidence:.2f}"
+            
+            # Draw bounding box with label
+            det['bbox'].draw(frame, color=(0, 255, 0), label=label)
 
             # Draw keypoints if present (for KeypointDetector)
             if 'keypoints' in det:
@@ -287,6 +312,45 @@ class VideoProcessor:
         """
         pass
 
+    def _draw_text_with_background(self, frame, text, position, font_scale=0.7,
+                                    text_color=(255, 255, 255), bg_color=(0, 0, 0),
+                                    bg_alpha=0.6, thickness=2, padding=5):
+        """Draw text with semi-transparent background for better readability.
+        
+        Args:
+            frame: Image to draw on (modified in-place)
+            text: Text string to display
+            position: (x, y) position of text baseline
+            font_scale: Font size multiplier
+            text_color: RGB color for text
+            bg_color: RGB color for background
+            bg_alpha: Background transparency (0=transparent, 1=opaque)
+            thickness: Text line thickness
+            padding: Pixels of padding around text
+        """
+        font = TEXT_FONT
+        
+        # Calculate text dimensions
+        (text_width, text_height), baseline = cv2.getTextSize(
+            text, font, font_scale, thickness
+        )
+        
+        x, y = position
+        
+        # Background rectangle coordinates
+        bg_x1 = x - padding
+        bg_y1 = y - text_height - padding
+        bg_x2 = x + text_width + padding
+        bg_y2 = y + baseline + padding
+        
+        # Draw semi-transparent background
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (bg_x1, bg_y1), (bg_x2, bg_y2), bg_color, -1)
+        cv2.addWeighted(overlay, bg_alpha, frame, 1 - bg_alpha, 0, frame)
+        
+        # Draw text on top
+        cv2.putText(frame, text, (x, y), font, font_scale, text_color, thickness)
+
     def _draw_overlay(self, frame, detections, tracks=None):
         """Draw text overlay (FPS, frame info, mode, detection count) on frame.
 
@@ -306,16 +370,23 @@ class VideoProcessor:
         else:
             frame_text = f"Frame: {self.frame_num}/{self.total_frames}"
 
-        # Draw text overlay
-        cv2.putText(frame, f"FPS: {avg_fps:.1f}", (10, 30),
-                   TEXT_FONT, 1, TEXT_COLOR, 2)
-        cv2.putText(frame, frame_text, (10, 70),
-                   TEXT_FONT, 1, TEXT_COLOR, 2)
-        cv2.putText(frame, f"Mode: {mode}", (10, 110),
-                   TEXT_FONT, 1, TEXT_COLOR, 2)
+        # Draw text overlay with backgrounds (stacked vertically)
+        y_offset = 30
+        line_height = 40
+        
+        self._draw_text_with_background(frame, f"FPS: {avg_fps:.1f}", (10, y_offset))
+        y_offset += line_height
+        
+        self._draw_text_with_background(frame, frame_text, (10, y_offset))
+        y_offset += line_height
+        
+        self._draw_text_with_background(frame, f"Mode: {mode}", (10, y_offset))
+        y_offset += line_height
+        
         if len(detections) > 0:
-            cv2.putText(frame, f"Detections: {len(detections)}",
-                       (10, 150), TEXT_FONT, 1, TEXT_COLOR, 2)
+            self._draw_text_with_background(
+                frame, f"Detections: {len(detections)}", (10, y_offset)
+            )
 
     # =========================================================================
     # USER INTERACTION

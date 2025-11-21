@@ -35,7 +35,7 @@ class TestVideoProcessor:
         assert processor.max_dimension == 640
         assert processor.skip_frames == 3
         assert processor.frame_num == 0
-        assert processor.continuous_mode == False
+        assert processor.continuous_mode == True
         assert len(processor.fps_samples) == 0  # deque is empty
         assert processor.window_name == 'Video Tracking'
 
@@ -144,17 +144,17 @@ class TestVideoProcessor:
         assert call_args[0][0] is frame  # First arg should be the frame
 
     def test_skip_frames_parameter(self, mock_detector, tmp_path):
-        """Test skip_frames parameter is enforced to be >= 1."""
+        """Test skip_frames parameter validation."""
         # Should accept valid values
         proc1 = VideoProcessor(str(tmp_path / "dummy.mp4"), mock_detector, skip_frames=5)
         assert proc1.skip_frames == 5
 
-        # Should clamp invalid values to minimum 1
-        proc2 = VideoProcessor(str(tmp_path / "dummy.mp4"), mock_detector, skip_frames=0)
-        assert proc2.skip_frames == 1
+        # Should raise error for invalid values
+        with pytest.raises(ValueError):
+            VideoProcessor(str(tmp_path / "dummy.mp4"), mock_detector, skip_frames=0)
 
-        proc3 = VideoProcessor(str(tmp_path / "dummy.mp4"), mock_detector, skip_frames=-5)
-        assert proc3.skip_frames == 1
+        with pytest.raises(ValueError):
+            VideoProcessor(str(tmp_path / "dummy.mp4"), mock_detector, skip_frames=-5)
 
     def test_webcam_source(self, mock_detector):
         """Test VideoProcessor accepts camera index as source."""

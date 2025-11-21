@@ -45,14 +45,14 @@ class ReIDExtractor(FeatureExtractor):
         >>> reid_extractor = ReIDExtractor(model='osnet_x1_0')
         >>>
         >>> detections = obj_detector.detect(frame)
-        >>> detections = reid_extractor.enhance(frame, detections)
+        >>> detections = reid_extractor.extract_from_detections(frame, detections)
         >>>
         >>> # Now detections have 'embedding' property
         >>> for det in detections:
         >>>     if 'embedding' in det:
         >>>         print(f"Embedding dim: {det['embedding'].dim}")
         >>>
-        >>> # Direct extraction from crops
+        >>> # Direct extraction from single crop
         >>> crop = frame[y1:y2, x1:x2]
         >>> embedding = reid_extractor.extract(crop)
     """
@@ -154,7 +154,3 @@ class ReIDExtractor(FeatureExtractor):
         ]
 
         return embeddings
-
-
-# Backwards compatibility: Keep ReIDDetector as alias
-ReIDDetector = ReIDExtractor

@@ -19,7 +19,15 @@ build/
 # Project specific
 output_*.mp4
 frame_*.jpg
+frame_*.jpeg
+debug_frame_*.json
 *.avi
+
+# Model weights
+*.pt
+*.pth
+*.weights
+*.onnx
 
 # IDE
 .vscode/

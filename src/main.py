@@ -14,7 +14,7 @@ Controls:
 import argparse
 import logging
 from .video_processor import VideoProcessor
-from .detecting import DetectorFactory
+from .detecting import DetectorFactory, get_registry
 from .config import Config
 
 logger = logging.getLogger(__name__)
@@ -37,26 +37,14 @@ def setup_arguments():
                              help='Use webcam as input (optionally specify camera index, default: 0)')
 
     # Video processor arguments
-    parser.add_argument('--max-dimension', type=int, default=None,
-                       help='Resize frames to max dimension before detection (e.g., 640 for speed)')
-    parser.add_argument('--skip-frames', type=int, default=1,
-                       help='Process every Nth frame (1=all frames, 5=every 5th frame)')
     parser.add_argument('--save-output', action='store_true',
                        help='Save output video')
     parser.add_argument('--output', default=None,
                        help='Output video path (default: output_YYYYMMDD_HHMMSS.mp4)')
-
-    # Detector arguments
-    parser.add_argument('--detector-type', type=str, default=None, choices=['object', 'keypoint'],
-                       help='Detector type: object (default) or keypoint (human pose)')
-    parser.add_argument('--model', default=None,
-                       help='Detection model: resnet50, mobilenet, retinanet (object); resnet50 (keypoint)')
-    parser.add_argument('--conf', type=float, default=None,
-                       help='Detection confidence threshold (0.0-1.0)')
-    parser.add_argument('--device', default=None,
-                       help='Device for detection: cpu, mps, or cuda')
-    parser.add_argument('--classes', type=int, nargs='+', default=None,
-                       help='Filter by class IDs (e.g., --classes 1 for people only) - object detector only')
+    
+    # Information
+    parser.add_argument('--list-models', action='store_true',
+                       help='List all available models and exit')
 
     # Logger arguments
     parser.add_argument('--verbose', action='store_true',
@@ -75,6 +63,23 @@ def main():
     """Main entry point for video processing with detection."""
     args = setup_arguments()
 
+    # Handle informational flags
+    if args.list_models:
+        registry = get_registry()
+        print("\nAvailable Models:")
+        print("-" * 60)
+        print(f"{'Name':<30} | {'Backend':<15} | {'Params':<10}")
+        print("-" * 60)
+        for name, spec in sorted(registry._models.items()):
+            params = f"{spec.params_million:.1f}M" if spec.params_million > 0 else "?"
+            print(f"{name:<30} | {spec.backend.value:<15} | {params:<10}")
+        
+        print("\nAliases:")
+        for alias, target in sorted(registry._aliases.items()):
+            print(f"  {alias:<20} -> {target}")
+        print("-" * 60)
+        return
+
     # Load configuration (config file + command-line args)
     if args.config:
         config = Config.from_yaml(args.config)
@@ -92,7 +97,7 @@ def main():
 
     # Get configuration values
     source = config.get('video.source', 'data/TownCent.mp4')
-    detector_type = config.get('detection.type', 'object')
+    detector_type = config.get('detection.type', 'object_detection')
     device = config.get('detection.device', 'cpu')
     conf_threshold = config.get('detection.conf_threshold', 0.5)
     max_dimension = config.get('video.max_dimension', None)
@@ -113,6 +118,10 @@ def main():
     except Exception as e:
         logger.error(f"Failed to load detector: {e}", exc_info=verbose)
         return
+
+    # TODO: ReID integration pending VideoProcessor refactoring
+    # ReID feature extraction will be added when tracking system is implemented
+    # See ARCHIVE/ for tracking code that will use ReID embeddings
 
     # Setup and run video processor
     try:

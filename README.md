@@ -42,7 +42,7 @@
 # Activate virtual environment (if not already active)
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Basic usage with default video
+# Basic usage with default video and config
 python -m src.main --video data/TownCent.mp4
 
 # Use webcam (default camera index 0)
@@ -51,28 +51,11 @@ python -m src.main --webcam
 # Use specific webcam (e.g., external camera at index 1)
 python -m src.main --webcam 1
 
-# Webcam with custom settings (detect only people)
-python -m src.main \
-    --webcam \
-    --model mobilenet \
-    --conf 0.7 \
-    --device mps \
-    --classes 1 \
-    --skip-frames 3 \
-    --save-output \
-    --verbose
+# Run with custom configuration
+python -m src.main --config my_config.yaml --video data/your_video.mp4
 
-# Video file with custom settings
-python -m src.main \
-    --video data/your_video.mp4 \
-    --model mobilenet \
-    --conf 0.7 \
-    --device mps \
-    --classes 1 \
-    --max-dimension 640 \
-    --skip-frames 3 \
-    --save-output \
-    --verbose
+# List available models
+python -m src.main --list-models
 
 # For development - run tests
 pytest
@@ -88,20 +71,15 @@ pytest --cov=src --cov-report=html
 - `--video`: Path to input video file (default: `data/TownCent.mp4` if no source specified)
 - `--webcam`: Use webcam as input (optionally specify camera index, default: 0)
 
-**Detection Settings:**
+**Runtime Options:**
 
-- `--model`: Detection model - `resnet50` (accurate), `mobilenet` (fast), `retinanet` (default: `mobilenet`)
-- `--conf`: Detection confidence threshold 0.0-1.0 (default: `0.5`)
-- `--device`: Device for inference: `cpu`, `mps` (Apple Silicon), or `cuda` (default: `cpu`)
-- `--classes`: Filter by class IDs (e.g., `--classes 1` for people only, `--classes 1 3` for people and cars)
-
-**Processing Options:**
-
-- `--max-dimension`: Resize frames to max dimension before detection for speed (e.g., `640`)
-- `--skip-frames`: Process every Nth frame (1=all frames, 5=every 5th) (default: `1`)
+- `--config`: Path to YAML config file (default: `config/default.yaml`)
 - `--save-output`: Save processed video to file
 - `--output`: Output video path (default: auto-generated `output_YYYYMMDD_HHMMSS.mp4`)
+- `--list-models`: List all available models and exit
 - `--verbose`: Enable detailed logging
+
+> **Note**: All model settings (model type, confidence, device, etc.) are now configured exclusively in the YAML config file.
 
 **Interactive Controls:**
 
@@ -163,9 +141,15 @@ The detection system follows an extensible architecture:
 - Defines standard pipeline: `preprocess()` → `inference()` → `postprocess()` → `detect()`
 - Abstract base class for implementing custom detectors
 
-**2. ObjectDetector (Implementation)**
+**2. Model Registry (New)**
+- Centralized database of all supported models
+- Programmatically verifies parameter counts and device support
+- Handles model aliases (e.g., 'mobilenet' -> 'fasterrcnn_mobilenet')
+- Lazy-loads metadata to keep startup fast
+
+**3. ObjectDetector (Implementation)**
 - Supports multiple torchvision models (FasterRCNN, RetinaNet)
-- Factory methods: `from_fasterrcnn_resnet50()`, `from_retinanet()`, `from_pretrained()`
+- Factory uses Registry to instantiate the correct backend (TorchVision or YOLO)
 - Full CPU/GPU/MPS device support
 
 **3. Detection (Result Container)**
@@ -184,15 +168,16 @@ The detection system follows an extensible architecture:
 ### Basic Detection
 
 ```python
-from src.detecting.detectors import ObjectDetector
+from src.detecting import DetectorFactory, Config
 import cv2
 
-# Load detector
-detector = ObjectDetector.from_fasterrcnn_resnet50(
-    device='cpu',
-    conf_threshold=0.5,
-    classes=[1]  # Only detect people
-)
+# Load config
+config = Config.from_default()
+config.set('detection.model', 'mobilenet')  # Use alias
+config.set('detection.device', 'cpu')
+
+# Create detector via Factory
+detector = DetectorFactory.create(config)
 
 # Detect on image
 frame = cv2.imread('image.jpg')
@@ -312,6 +297,74 @@ Planned enhancements for future versions:
 - [ ] **Model Zoo**: Additional pre-trained detector models
 - [ ] **Unit Tests**: Comprehensive test coverage
 - [ ] **API Documentation**: Complete API reference and tutorials
+
+---
+
+## Troubleshooting
+
+### Installation Issues
+
+**Missing dependencies:**
+```bash
+# If torchreid is missing
+pip install torchreid
+
+# If gdown is missing (for ReID model downloads)
+pip install gdown
+
+# If tensorboard is missing (required by torchreid)
+pip install tensorboard
+```
+
+**Python version compatibility:**
+- GenTbD requires Python 3.9 or higher
+- Check your version: `python --version`
+
+### Runtime Issues
+
+**"Video file not found" error:**
+- Ensure the video path is correct
+- Try using absolute paths instead of relative paths
+- Verify file permissions
+
+**Low FPS on MPS (Apple Silicon):**
+- First run is slower due to model compilation
+- Subsequent runs should be significantly faster (~8-15 FPS)
+- See `experiments/MPS_SOLUTION.md` for device-specific optimizations
+
+**Webcam not opening:**
+- Try different camera indices: `--webcam 0`, `--webcam 1`
+- Check camera permissions in System Settings (macOS)
+- Ensure no other application is using the camera
+- Valid webcam indices are 0-10
+
+**"COCO class not found" warnings:**
+- Some models use different class IDs than COCO
+- This is expected and doesn't affect detection
+- Labels will show as "Class_X" for unknown IDs
+
+### Performance Issues
+
+**Detection is slow:**
+- Use `--list-models` to find faster models (e.g., `yolo_v8n`)
+- Reduce input resolution in config: `video.max_dimension: 640`
+- Enable frame skipping in config: `video.skip_frames: 3`
+- Use MPS (Apple Silicon) or CUDA (NVIDIA) instead of CPU
+
+**High memory usage:**
+- Close other applications
+- Reduce `video.max_dimension` in config
+- Use smaller models (mobilenet, yolo_v8n)
+
+### Configuration Issues
+
+**"Invalid detection type" error:**
+- Use `object_detection` or `keypoint_detection` (not `object` or `keypoint`)
+- Check `config/default.yaml` for valid values
+
+**Model not found:**
+- Run `python -m src.main --list-models` to see available models
+- Check spelling and use exact model name or alias
 
 ---
 

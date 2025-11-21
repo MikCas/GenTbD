@@ -3,23 +3,25 @@
 # Video source settings
 video:
   source: "data/TownCent.mp4"  # Path to video file, camera index (0, 1), or RTSP URL
-  max_dimension: 640           # Resize frames to max dimension (640 = 6x speedup, null = no resize)
+  max_dimension: 320           # Resize frames to max dimension (640 = 6x speedup, null = no resize)
   skip_frames: 3               # Process every Nth frame (3 = 3x speedup, 1 = all frames)
   save_output: false           # Save processed video
   output_path: null            # Output path (null = auto-generate)
 
 # Detection settings
 detection:
-  type: "object"               # Detector type: "object", "keypoint", "reid"
-  model: "mobilenet"           # Model: resnet50, mobilenet, retinanet (for object)
-                               #        resnet50 (for keypoint)
-                               #        osnet_x1_0, osnet_x0_75, osnet_x0_5, resnet50 (for reid)
+  type: "object_detection"     # Task type: "object_detection", "keypoint_detection"
+  model: "yolo_v11m" # Model options by task:
+                               #   object_detection: fasterrcnn_mobilenet, fasterrcnn_resnet50, retinanet_resnet50,
+                               #                     yolo_v8n, yolo_v8s, yolo_v8m, yolo_v8l, yolo_v8x,
+                               #                     yolo_v11n, yolo_v11s, yolo_v11m
+                               #   keypoint_detection: keypointrcnn_resnet50
   device: "cpu"                # Device: cpu, mps, cuda
-  conf_threshold: 0.5          # Confidence threshold (0.0-1.0)
-  classes: null                # Filter classes (null = all, [1] = people only)
+  conf_threshold: 0.2          # Confidence threshold (0.0-1.0)
+  classes: [0]                # Filter classes (null = all, [0] = people only)
                                # Note: keypoint detector only detects people
 
-  # Keypoint-specific settings (when type = "keypoint")
+  # Keypoint-specific settings (when type = "keypoint_detection")
   keypoint:
     keypoint_threshold: 0.5    # Minimum visibility for individual keypoints
     draw_skeleton: true        # Draw skeleton connections between keypoints
@@ -27,9 +29,12 @@ detection:
     keypoint_radius: 4         # Radius of keypoint circles
     skeleton_thickness: 2      # Thickness of skeleton lines
 
-  # ReID-specific settings (when type = "reid")
-  reid:
-    embedding_dim: 512         # Embedding dimension (512 for OSNet models)
+# FUTURE: ReID feature extraction (will be integrated with tracking system)
+# reid:
+#   enabled: false               # Enable ReID feature extraction (adds embeddings to detections)
+#   model: "osnet_x1_0"          # ReID model: osnet_x1_0, osnet_x0_75, osnet_x0_5, reid_resnet50
+#   device: "cpu"                # Device: cpu, mps, cuda (can differ from detector)
+#   embedding_dim: 512           # Embedding dimension (512 for OSNet models)
 
 # Tracking settings (for future implementation)
 tracking:
@@ -38,12 +43,7 @@ tracking:
   max_age: 30                  # Frames to keep lost tracks
   min_hits: 3                  # Minimum detections before track confirmed
   iou_threshold: 0.3           # IoU threshold for matching
-
-  # ReID settings
-  reid:
-    enabled: false             # Enable ReID feature matching
-    model: null                # ReID model path (null = use default)
-    weight: 0.5                # ReID weight vs IoU (0.0-1.0)
+  reid_weight: 0.5             # ReID weight vs IoU (0.0-1.0) when ReID enabled
 
 # Logging
 logging:

@@ -109,26 +109,10 @@ class Config:
             self.set('video.source', args.video)
 
         # Video processing
-        if hasattr(args, 'max_dimension') and args.max_dimension is not None:
-            self.set('video.max_dimension', args.max_dimension)
-        if hasattr(args, 'skip_frames') and args.skip_frames is not None:
-            self.set('video.skip_frames', args.skip_frames)
         if hasattr(args, 'save_output') and args.save_output:
             self.set('video.save_output', args.save_output)
         if hasattr(args, 'output') and args.output:
             self.set('video.output_path', args.output)
-
-        # Detection
-        if hasattr(args, 'detector_type') and args.detector_type:
-            self.set('detection.type', args.detector_type)
-        if hasattr(args, 'model') and args.model:
-            self.set('detection.model', args.model)
-        if hasattr(args, 'device') and args.device:
-            self.set('detection.device', args.device)
-        if hasattr(args, 'conf') and args.conf:
-            self.set('detection.conf_threshold', args.conf)
-        if hasattr(args, 'classes') and args.classes:
-            self.set('detection.classes', args.classes)
 
         # Logging
         if hasattr(args, 'verbose') and args.verbose:
@@ -154,7 +138,7 @@ class Config:
 
         # Validate detection type if specified
         if 'detection' in self._config and 'type' in self._config['detection']:
-            valid_types = ['object', 'keypoint', 'reid']
+            valid_types = ['object_detection', 'keypoint_detection']
             det_type = self._config['detection']['type']
             if det_type not in valid_types:
                 raise ValueError(

@@ -13,13 +13,13 @@ class TestConfig:
         """Test Config initializes from dictionary."""
         config_dict = {
             'detection': {
-                'type': 'object',
+                'type': 'object_detection',
                 'conf_threshold': 0.7
             }
         }
         config = Config(config_dict)
 
-        assert config.get('detection.type') == 'object'
+        assert config.get('detection.type') == 'object_detection'
         assert config.get('detection.conf_threshold') == 0.7
 
     def test_initialization_empty_dict(self):
@@ -33,7 +33,7 @@ class TestConfig:
         # Create temporary YAML file
         yaml_content = """
 detection:
-  type: keypoint
+  type: keypoint_detection
   model: resnet50
   device: cpu
   conf_threshold: 0.6
@@ -45,7 +45,7 @@ detection:
         try:
             config = Config.from_yaml(temp_path)
 
-            assert config.get('detection.type') == 'keypoint'
+            assert config.get('detection.type') == 'keypoint_detection'
             assert config.get('detection.model') == 'resnet50'
             assert config.get('detection.device') == 'cpu'
             assert config.get('detection.conf_threshold') == 0.6
@@ -62,7 +62,7 @@ detection:
         # Create temporary file with invalid YAML
         invalid_yaml = """
 detection:
-  type: object
+  type: object_detection
   conf_threshold: [unmatched brackets
 """
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
@@ -111,7 +111,7 @@ detection:
         """Test getting value when intermediate keys are missing."""
         config_dict = {
             'detection': {
-                'type': 'object'
+                'type': 'object_detection'
             }
         }
         config = Config(config_dict)
@@ -120,92 +120,49 @@ detection:
         assert config.get('tracking.max_age', 30) == 30
 
     def test_merge_args_overrides_config(self):
-        """Test merge_args overrides config file values."""
+        """Test merge_args overrides config file values for runtime args."""
         config_dict = {
-            'detection': {
-                'type': 'object',
-                'model': 'mobilenet',
-                'conf_threshold': 0.5
+            'video': {
+                'source': 'default.mp4',
+                'save_output': False
+            },
+            'logging': {
+                'verbose': False
             }
         }
         config = Config(config_dict)
 
         # Create args namespace with correct attribute names
         class Args:
-            detector_type = 'keypoint'  # Mapped to detection.type
-            model = 'resnet50'
-            conf = 0.7  # Mapped to detection.conf_threshold
-            device = 'cuda'
+            video = 'cli_video.mp4'
+            save_output = True
+            verbose = True
+            output = 'out.mp4'
 
         args = Args()
         config.merge_args(args)
 
         # CLI args should override config file
-        assert config.get('detection.type') == 'keypoint'
-        assert config.get('detection.model') == 'resnet50'
-        assert config.get('detection.conf_threshold') == 0.7
-        assert config.get('detection.device') == 'cuda'
-
-    def test_merge_args_with_none_values(self):
-        """Test merge_args ignores None values from CLI."""
-        config_dict = {
-            'detection': {
-                'type': 'object',
-                'conf_threshold': 0.5
-            }
-        }
-        config = Config(config_dict)
-
-        # Create args with None values (not specified on CLI)
-        class Args:
-            detector_type = None  # Should be ignored
-            conf = 0.7  # Should override
-
-        args = Args()
-        config.merge_args(args)
-
-        # None values should not override config
-        assert config.get('detection.type') == 'object'  # Not overridden
-        assert config.get('detection.conf_threshold') == 0.7  # Overridden
-
-    def test_merge_args_creates_new_keys(self):
-        """Test merge_args can add keys not in original config."""
-        config_dict = {
-            'detection': {
-                'type': 'object'
-            }
-        }
-        config = Config(config_dict)
-
-        class Args:
-            verbose = True
-            save_output = True
-
-        args = Args()
-        config.merge_args(args)
-
-        assert config.get('logging.verbose') is True
+        assert config.get('video.source') == 'cli_video.mp4'
         assert config.get('video.save_output') is True
+        assert config.get('logging.verbose') is True
+        assert config.get('video.output_path') == 'out.mp4'
 
     def test_merge_args_with_actual_cli_args(self):
         """Test merge_args with actual CLI argument names."""
         config = Config({})
 
         class Args:
-            detector_type = 'keypoint'
-            model = 'resnet50'
-            max_dimension = 1920
             video = 'test.mp4'
             verbose = True
+            save_output = True
 
         args = Args()
         config.merge_args(args)
 
-        assert config.get('detection.type') == 'keypoint'
-        assert config.get('detection.model') == 'resnet50'
-        assert config.get('video.max_dimension') == 1920
         assert config.get('video.source') == 'test.mp4'
         assert config.get('logging.verbose') is True
+        assert config.get('video.save_output') is True
 
     def test_get_with_different_value_types(self):
         """Test Config handles different value types correctly."""
@@ -247,7 +204,7 @@ detection:
         """Test that getting a value doesn't modify the config."""
         config_dict = {
             'detection': {
-                'type': 'object'
+                'type': 'object_detection'
             }
         }
         config = Config(config_dict)
@@ -260,13 +217,13 @@ detection:
 
         # Should be the same
         assert value1 == value2
-        assert config.get('detection.type') == 'object'
+        assert config.get('detection.type') == 'object_detection'
 
     def test_from_yaml_preserves_structure(self):
         """Test YAML loading preserves nested structure."""
         yaml_content = """
 detection:
-  type: object
+  type: object_detection
   model: mobilenet
   keypoint:
     keypoint_threshold: 0.5
@@ -282,7 +239,7 @@ tracking:
         try:
             config = Config.from_yaml(temp_path)
 
-            assert config.get('detection.type') == 'object'
+            assert config.get('detection.type') == 'object_detection'
             assert config.get('detection.model') == 'mobilenet'
             assert config.get('detection.keypoint.keypoint_threshold') == 0.5
             assert config.get('detection.keypoint.draw_skeleton') is True
@@ -308,7 +265,7 @@ tracking:
         """Test merge_args with empty args object."""
         config_dict = {
             'detection': {
-                'type': 'object'
+                'type': 'object_detection'
             }
         }
         config = Config(config_dict)
@@ -320,7 +277,7 @@ tracking:
         config.merge_args(args)
 
         # Config should be unchanged
-        assert config.get('detection.type') == 'object'
+        assert config.get('detection.type') == 'object_detection'
 
     def test_get_returns_copy_of_mutable_values(self):
         """Test that get() returns values that can be safely modified."""

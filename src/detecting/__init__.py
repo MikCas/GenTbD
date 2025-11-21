@@ -12,5 +12,13 @@ from .detector import Detector
 from .feature_extractor import FeatureExtractor
 from .detection import Detection
 from .factory import DetectorFactory
+from .model_registry import ModelRegistry, get_registry
 
-__all__ = ['Detector', 'FeatureExtractor', 'Detection', 'DetectorFactory']
+__all__ = [
+    'Detector', 
+    'FeatureExtractor', 
+    'Detection', 
+    'DetectorFactory',
+    'ModelRegistry',
+    'get_registry'
+]
