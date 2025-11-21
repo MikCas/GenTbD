@@ -8,7 +8,7 @@ Components:
 - detectors/: Concrete detector implementations
 """
 
-from .detector import Detector
+from .base import Detector
 from .feature_extractor import FeatureExtractor
 from .detection import Detection
 from .factory import DetectorFactory

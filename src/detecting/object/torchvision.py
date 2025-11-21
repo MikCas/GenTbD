@@ -7,12 +7,12 @@ from torchvision.models.detection import (
     retinanet_resnet50_fpn,
 )
 import cv2
-from ..detector import Detector
-from ..detection import Detection
 from ...core.properties import BoundingBox
+from ..base import Detector
+from ..detection import Detection
 
 
-class ObjectDetector(Detector):
+class TorchVisionObjectDetector(Detector):
     """FasterRCNN-based object detector for COCO classes."""
 
     MODELS = {

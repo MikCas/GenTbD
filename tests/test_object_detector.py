@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import torch
 from unittest.mock import Mock, patch
-from src.detecting.detectors.object_detector import ObjectDetector
+from src.detecting.object.torchvision import TorchVisionObjectDetector
 
 
 class TestObjectDetector:
@@ -12,7 +12,7 @@ class TestObjectDetector:
 
     def test_init_resnet50(self):
         """Test ResNet50 model initialization."""
-        detector = ObjectDetector(model='resnet50', device='cpu', conf_threshold=0.6)
+        detector = TorchVisionObjectDetector(model='resnet50', device='cpu', conf_threshold=0.6)
 
         assert detector is not None
         assert detector.device == 'cpu'
@@ -21,7 +21,7 @@ class TestObjectDetector:
 
     def test_init_mobilenet(self):
         """Test MobileNet model initialization."""
-        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
 
         assert detector is not None
         assert detector.device == 'cpu'
@@ -30,7 +30,7 @@ class TestObjectDetector:
 
     def test_init_retinanet(self):
         """Test RetinaNet model initialization."""
-        detector = ObjectDetector(model='retinanet', device='cpu', conf_threshold=0.7)
+        detector = TorchVisionObjectDetector(model='retinanet', device='cpu', conf_threshold=0.7)
 
         assert detector is not None
         assert detector.device == 'cpu'
@@ -39,24 +39,24 @@ class TestObjectDetector:
 
     def test_init_with_classes_filter(self):
         """Test initialization with class filtering."""
-        detector = ObjectDetector(model='mobilenet', device='cpu', classes=[0, 1, 2])
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu', classes=[0, 1, 2])
 
         assert detector.classes == [0, 1, 2]
 
     def test_init_without_classes_filter(self):
         """Test initialization without class filtering."""
-        detector = ObjectDetector(model='mobilenet', device='cpu')
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu')
 
         assert detector.classes is None
 
     def test_init_invalid_model(self):
         """Test initialization with invalid model name."""
         with pytest.raises(ValueError, match="Unknown model"):
-            ObjectDetector(model='invalid_model', device='cpu')
+            TorchVisionObjectDetector(model='invalid_model', device='cpu')
 
     def test_preprocess_bgr_to_rgb(self):
         """Test preprocessing converts BGR to RGB."""
-        detector = ObjectDetector(model='mobilenet', device='cpu')
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu')
 
         # Create a simple BGR image (blue in top-left corner)
         image = np.zeros((100, 100, 3), dtype=np.uint8)
@@ -77,7 +77,7 @@ class TestObjectDetector:
 
     def test_preprocess_normalization(self):
         """Test preprocessing normalizes values to [0, 1]."""
-        detector = ObjectDetector(model='mobilenet', device='cpu')
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu')
 
         # Create image with max values
         image = np.full((50, 50, 3), 255, dtype=np.uint8)
@@ -89,7 +89,7 @@ class TestObjectDetector:
 
     def test_preprocess_tensor_permutation(self):
         """Test preprocessing permutes dimensions correctly."""
-        detector = ObjectDetector(model='mobilenet', device='cpu')
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu')
 
         image = np.zeros((100, 200, 3), dtype=np.uint8)
         tensor = detector.preprocess(image)
@@ -99,7 +99,7 @@ class TestObjectDetector:
 
     def test_postprocess_confidence_filtering(self):
         """Test postprocessing filters by confidence threshold."""
-        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.7)
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.7)
 
         # Mock detection output
         output = {
@@ -117,7 +117,7 @@ class TestObjectDetector:
 
     def test_postprocess_class_filtering(self):
         """Test postprocessing filters by class IDs."""
-        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5, classes=[1, 3])
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5, classes=[1, 3])
 
         # Mock detection output with classes 1, 2, 3
         output = {
@@ -135,7 +135,7 @@ class TestObjectDetector:
 
     def test_postprocess_no_class_filtering(self):
         """Test postprocessing without class filtering."""
-        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
 
         # Mock detection output
         output = {
@@ -151,7 +151,7 @@ class TestObjectDetector:
 
     def test_postprocess_creates_detection_objects(self):
         """Test postprocessing creates proper Detection objects."""
-        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.5)
 
         # Mock detection output
         output = {
@@ -182,7 +182,7 @@ class TestObjectDetector:
 
     def test_postprocess_empty_result(self):
         """Test postprocessing with no detections passing threshold."""
-        detector = ObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.9)
+        detector = TorchVisionObjectDetector(model='mobilenet', device='cpu', conf_threshold=0.9)
 
         # Mock detection output with low scores
         output = {
@@ -197,7 +197,7 @@ class TestObjectDetector:
 
     def test_default_model(self):
         """Test default model is mobilenet."""
-        detector = ObjectDetector(device='cpu')
+        detector = TorchVisionObjectDetector(device='cpu')
 
         assert detector is not None
         assert detector.model is not None

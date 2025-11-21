@@ -2,12 +2,12 @@ import torch
 import numpy as np
 from typing import List, Optional
 from ultralytics import YOLO
-from ..detector import Detector
+from ..base import Detector
 from ..detection import Detection
 from ...core.properties import BoundingBox
 
 
-class YOLODetector(Detector):
+class YOLOObjectDetector(Detector):
     """YOLO-based object detector for COCO classes.
 
     Uses Ultralytics YOLO models (YOLOv8/YOLOv11) which have better MPS

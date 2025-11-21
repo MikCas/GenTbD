@@ -9,8 +9,8 @@ main.py clean.
 import logging
 from typing import Optional
 from ..config import Config
-from .detector import Detector
-from .detectors.keypoint_detector import KeypointDetector
+from .base import Detector
+from .keypoint.torchvision import TorchVisionKeypointDetector
 from .model_registry import get_registry, ModelBackend
 
 
@@ -75,11 +75,11 @@ class DetectorFactory:
         device: str,
         conf_threshold: float,
         logger: Optional[logging.Logger]
-    ) -> KeypointDetector:
+    ) -> TorchVisionKeypointDetector:
         """
-        Create KeypointDetector with model validation.
+        Create TorchVisionKeypointDetector with model validation.
 
-        KeypointDetector only supports 'keypointrcnn_resnet50'. If config specifies
+        TorchVisionKeypointDetector only supports 'keypointrcnn_resnet50'. If config specifies
         a different model, it will be overridden with a warning.
         """
         model = config.get('detection.model', 'keypointrcnn_resnet50')
@@ -99,7 +99,7 @@ class DetectorFactory:
         # Get keypoint-specific parameters
         keypoint_threshold = config.get('detection.keypoint.keypoint_threshold', 0.5)
 
-        detector = KeypointDetector(
+        detector = TorchVisionKeypointDetector(
             model=base_model,
             device=device,
             conf_threshold=conf_threshold,

@@ -3,8 +3,8 @@
 import pytest
 import logging
 from src.detecting.factory import DetectorFactory
-from src.detecting.detectors.object_detector import ObjectDetector
-from src.detecting.detectors.keypoint_detector import KeypointDetector
+from src.detecting.object.torchvision import TorchVisionObjectDetector
+from src.detecting.keypoint.torchvision import TorchVisionKeypointDetector
 from src.config import Config
 
 
@@ -25,7 +25,7 @@ class TestDetectorFactory:
 
         detector = DetectorFactory.create(config)
 
-        assert isinstance(detector, ObjectDetector)
+        assert isinstance(detector, TorchVisionObjectDetector)
         assert detector.device == 'cpu'
         assert detector.conf_threshold == 0.5
 
@@ -44,7 +44,7 @@ class TestDetectorFactory:
 
         detector = DetectorFactory.create(config)
 
-        assert isinstance(detector, ObjectDetector)
+        assert isinstance(detector, TorchVisionObjectDetector)
         assert detector.classes == [1, 2, 3]
 
     def test_create_keypoint_detector(self):
@@ -64,7 +64,7 @@ class TestDetectorFactory:
 
         detector = DetectorFactory.create(config)
 
-        assert isinstance(detector, KeypointDetector)
+        assert isinstance(detector, TorchVisionKeypointDetector)
         assert detector.device == 'cpu'
         assert detector.conf_threshold == 0.5
         assert detector.keypoint_threshold == 0.5
@@ -88,7 +88,7 @@ class TestDetectorFactory:
         # Should not raise error, should auto-select resnet50
         detector = DetectorFactory.create(config, logger)
 
-        assert isinstance(detector, KeypointDetector)
+        assert isinstance(detector, TorchVisionKeypointDetector)
         # Detector was created successfully (model was auto-corrected)
 
     def test_create_keypoint_detector_with_none_model(self):
@@ -108,7 +108,7 @@ class TestDetectorFactory:
 
         detector = DetectorFactory.create(config)
 
-        assert isinstance(detector, KeypointDetector)
+        assert isinstance(detector, TorchVisionKeypointDetector)
 
     def test_create_invalid_detector_type(self):
         """Test creating detector with invalid type raises error."""
@@ -140,7 +140,7 @@ class TestDetectorFactory:
         # Should not raise error
         detector = DetectorFactory.create(config, logger)
 
-        assert isinstance(detector, ObjectDetector)
+        assert isinstance(detector, TorchVisionObjectDetector)
 
     def test_create_without_logger(self):
         """Test factory works without logger."""
@@ -157,7 +157,7 @@ class TestDetectorFactory:
         # Should not raise error when logger is None
         detector = DetectorFactory.create(config, logger=None)
 
-        assert isinstance(detector, ObjectDetector)
+        assert isinstance(detector, TorchVisionObjectDetector)
 
     def test_create_object_detector_different_models(self):
         """Test creating ObjectDetector with different model types."""
@@ -176,7 +176,7 @@ class TestDetectorFactory:
 
             detector = DetectorFactory.create(config)
 
-            assert isinstance(detector, ObjectDetector)
+            assert isinstance(detector, TorchVisionObjectDetector)
 
     def test_create_with_different_devices(self):
         """Test creating detector with different device options."""
@@ -231,4 +231,4 @@ class TestDetectorFactory:
         detector = DetectorFactory.create(config)
 
         # Should default to object detector
-        assert isinstance(detector, ObjectDetector)
+        assert isinstance(detector, TorchVisionObjectDetector)

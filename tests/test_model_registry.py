@@ -12,8 +12,8 @@ from src.detecting.model_registry import (
     ModelBackend, 
     get_registry
 )
-from src.detecting.detectors.object_detector import ObjectDetector
-from src.detecting.detectors.yolo_detector import YOLODetector
+from src.detecting.object.torchvision import TorchVisionObjectDetector
+from src.detecting.object.yolo import YOLOObjectDetector
 
 class TestModelRegistry:
     
@@ -50,7 +50,7 @@ class TestModelRegistry:
         registry = ModelRegistry()
         spec = ModelSpec(
             name='test_model',
-            detector_class=ObjectDetector,
+            detector_class=TorchVisionObjectDetector,
             backend=ModelBackend.TORCHVISION
         )
         registry.register(spec)
@@ -67,7 +67,7 @@ class TestModelSpec:
         """Test CPU support check."""
         spec = ModelSpec(
             name='test',
-            detector_class=ObjectDetector,
+            detector_class=TorchVisionObjectDetector,
             backend=ModelBackend.TORCHVISION
         )
         assert spec.check_device_support('cpu') is True
@@ -76,7 +76,7 @@ class TestModelSpec:
         """Test CUDA support check (mocked)."""
         spec = ModelSpec(
             name='test',
-            detector_class=ObjectDetector,
+            detector_class=TorchVisionObjectDetector,
             backend=ModelBackend.TORCHVISION
         )
         
@@ -93,7 +93,7 @@ class TestModelSpec:
         """Test that params are calculated lazily."""
         spec = ModelSpec(
             name='fasterrcnn_resnet50', # Use a real name to trigger internal mapping
-            detector_class=ObjectDetector,
+            detector_class=TorchVisionObjectDetector,
             backend=ModelBackend.TORCHVISION
         )
         

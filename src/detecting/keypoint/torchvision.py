@@ -5,12 +5,12 @@ import numpy as np
 from typing import List
 from torchvision.models.detection import keypointrcnn_resnet50_fpn
 import cv2
-from ..detector import Detector
+from ..base import Detector
 from ..detection import Detection
 from ...core.properties import BoundingBox, Keypoints
 
 
-class KeypointDetector(Detector):
+class TorchVisionKeypointDetector(Detector):
     """Keypoint R-CNN-based detector for human pose estimation.
 
     Detects people and estimates 17 body keypoints per person using

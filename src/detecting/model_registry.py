@@ -14,10 +14,10 @@ from typing import Dict, Optional, Callable, Type, List, Any
 from enum import Enum
 import torch
 
-from .detector import Detector
-from .detectors.object_detector import ObjectDetector
-from .detectors.keypoint_detector import KeypointDetector
-from .detectors.yolo_detector import YOLODetector
+from .base import Detector
+from .object.torchvision import TorchVisionObjectDetector
+from .keypoint.torchvision import TorchVisionKeypointDetector
+from .object.yolo import YOLOObjectDetector
 
 
 class ModelBackend(Enum):
@@ -176,21 +176,21 @@ def _register_standard_models():
         
         registry.register(ModelSpec(
             name='fasterrcnn_resnet50',
-            detector_class=ObjectDetector,
+            detector_class=TorchVisionObjectDetector,
             backend=ModelBackend.TORCHVISION,
             model_fn=fasterrcnn_resnet50_fpn
         ))
         
         registry.register(ModelSpec(
             name='fasterrcnn_mobilenet',
-            detector_class=ObjectDetector,
+            detector_class=TorchVisionObjectDetector,
             backend=ModelBackend.TORCHVISION,
             model_fn=fasterrcnn_mobilenet_v3_large_fpn
         ))
         
         registry.register(ModelSpec(
             name='retinanet_resnet50',
-            detector_class=ObjectDetector,
+            detector_class=TorchVisionObjectDetector,
             backend=ModelBackend.TORCHVISION,
             model_fn=retinanet_resnet50_fpn
         ))
@@ -209,7 +209,7 @@ def _register_standard_models():
         
         registry.register(ModelSpec(
             name='keypointrcnn_resnet50',
-            detector_class=KeypointDetector,
+            detector_class=TorchVisionKeypointDetector,
             backend=ModelBackend.TORCHVISION,
             model_fn=keypointrcnn_resnet50_fpn
         ))
@@ -229,7 +229,7 @@ def _register_standard_models():
         
         registry.register(ModelSpec(
             name=yolo_name,
-            detector_class=YOLODetector,
+            detector_class=YOLOObjectDetector,
             backend=ModelBackend.ULTRALYTICS,
             model_path=short_name
         ))

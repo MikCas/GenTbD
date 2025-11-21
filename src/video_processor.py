@@ -13,13 +13,12 @@ from datetime import datetime
 from typing import Optional
 from .core import Frame
 from .core.properties import BoundingBox
+from .visualization.visualizer import Visualizer
 
 logger = logging.getLogger(__name__)
 
 # UI Constants
 FPS_WINDOW = 30
-TEXT_COLOR = (255, 0, 0)  # BGR blue
-TEXT_FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 class VideoProcessor:
     """Processes video with detection, visualization, and interactive controls.
@@ -27,14 +26,14 @@ class VideoProcessor:
     Features:
     - Object detection on each frame
     - FPS tracking and display
-    - Interactive controls (step/continuous mode)
+    - Interactive controls (play/pause)
     - Frame saving
     - Optional video output
 
     Controls:
-    - 'c': Toggle continuous/step mode
-    - SPACE: Next frame (in step mode)
-    - 's': Save current frame as image
+    - SPACE: Play/Pause
+    - →: Next frame (when paused)
+    - 's': Save current frame
     - 'q': Quit
     """
 
@@ -81,10 +80,11 @@ class VideoProcessor:
 
         # State
         self.frame_num = 0
-        self.continuous_mode = True  # Start in continuous mode for performance
+        self.continuous_mode = True  # Start playing automatically
         # Use deque with maxlen to prevent unbounded growth
         self.fps_samples = deque(maxlen=FPS_WINDOW)
         self.window_name = 'Video Tracking'
+        self.visualizer = Visualizer(self.window_name)
 
     @property
     def is_live_stream(self):
@@ -277,116 +277,20 @@ class VideoProcessor:
             detections: List of Detection objects to render
             tracks: List of Track objects to render (future)
         """
-        from .core.properties.bounding_box import COCO_CLASSES
-        
-        # Draw detections and keypoints
-        for det in detections:
-            # Build label with class name and confidence
-            class_id = det.get('class_id', -1)
-            class_name = COCO_CLASSES.get(class_id, f'Class_{class_id}')
-            confidence = det.get('confidence', 0.0)
-            label = f"{class_name} {confidence:.2f}"
-            
-            # Draw bounding box with label
-            det['bbox'].draw(frame, color=(0, 255, 0), label=label)
+        # Calculate rolling average FPS
+        avg_fps = sum(self.fps_samples) / len(self.fps_samples) if self.fps_samples else 0.0
+        is_paused = not self.continuous_mode
 
-            # Draw keypoints if present (for KeypointDetector)
-            if 'keypoints' in det:
-                det['keypoints'].draw(frame, color=(255, 0, 255))
-
-        # Draw tracks (future)
-        if tracks:
-            self._draw_tracks(frame, tracks)
-
-        # Draw overlay
-        self._draw_overlay(frame, detections, tracks)
-
-    def _draw_tracks(self, frame, tracks):
-        """Draw tracking IDs and trajectories on frame.
-
-        Args:
-            frame: Frame to draw on (will be modified in-place)
-            tracks: List of Track objects to render
-
-        Future placeholder for tracking visualization.
-        """
-        pass
-
-    def _draw_text_with_background(self, frame, text, position, font_scale=0.7,
-                                    text_color=(255, 255, 255), bg_color=(0, 0, 0),
-                                    bg_alpha=0.6, thickness=2, padding=5):
-        """Draw text with semi-transparent background for better readability.
-        
-        Args:
-            frame: Image to draw on (modified in-place)
-            text: Text string to display
-            position: (x, y) position of text baseline
-            font_scale: Font size multiplier
-            text_color: RGB color for text
-            bg_color: RGB color for background
-            bg_alpha: Background transparency (0=transparent, 1=opaque)
-            thickness: Text line thickness
-            padding: Pixels of padding around text
-        """
-        font = TEXT_FONT
-        
-        # Calculate text dimensions
-        (text_width, text_height), baseline = cv2.getTextSize(
-            text, font, font_scale, thickness
+        self.visualizer.render(
+            frame=frame,
+            detections=detections,
+            fps=avg_fps,
+            frame_num=self.frame_num,
+            total_frames=self.total_frames,
+            is_paused=is_paused,
+            tracks=tracks
         )
-        
-        x, y = position
-        
-        # Background rectangle coordinates
-        bg_x1 = x - padding
-        bg_y1 = y - text_height - padding
-        bg_x2 = x + text_width + padding
-        bg_y2 = y + baseline + padding
-        
-        # Draw semi-transparent background
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (bg_x1, bg_y1), (bg_x2, bg_y2), bg_color, -1)
-        cv2.addWeighted(overlay, bg_alpha, frame, 1 - bg_alpha, 0, frame)
-        
-        # Draw text on top
-        cv2.putText(frame, text, (x, y), font, font_scale, text_color, thickness)
 
-    def _draw_overlay(self, frame, detections, tracks=None):
-        """Draw text overlay (FPS, frame info, mode, detection count) on frame.
-
-        Args:
-            frame: Frame to draw on (will be modified in-place)
-            detections: List of detections (for counting)
-            tracks: List of tracks (for counting, future)
-        """
-        # Calculate rolling average FPS (deque already limits to FPS_WINDOW)
-        avg_fps = sum(self.fps_samples) / len(self.fps_samples) if self.fps_samples else 0
-
-        mode = "CONTINUOUS" if self.continuous_mode else "STEP"
-
-        # Frame counter text (handle live streams)
-        if self.is_live_stream:
-            frame_text = f"Frame: {self.frame_num}"
-        else:
-            frame_text = f"Frame: {self.frame_num}/{self.total_frames}"
-
-        # Draw text overlay with backgrounds (stacked vertically)
-        y_offset = 30
-        line_height = 40
-        
-        self._draw_text_with_background(frame, f"FPS: {avg_fps:.1f}", (10, y_offset))
-        y_offset += line_height
-        
-        self._draw_text_with_background(frame, frame_text, (10, y_offset))
-        y_offset += line_height
-        
-        self._draw_text_with_background(frame, f"Mode: {mode}", (10, y_offset))
-        y_offset += line_height
-        
-        if len(detections) > 0:
-            self._draw_text_with_background(
-                frame, f"Detections: {len(detections)}", (10, y_offset)
-            )
 
     # =========================================================================
     # USER INTERACTION
@@ -398,7 +302,7 @@ class VideoProcessor:
         Args:
             frame: Frame to display
         """
-        cv2.imshow(self.window_name, frame)
+        self.visualizer.show(frame)
 
     def _handle_input(self, frame) -> bool:
         """Handle keyboard input.
@@ -414,10 +318,15 @@ class VideoProcessor:
 
         if key == ord('q'):
             return True
-        elif key == ord('c'):
+        elif key == ord(' '):  # Spacebar: toggle play/pause
             self.continuous_mode = not self.continuous_mode
-            mode = "CONTINUOUS" if self.continuous_mode else "STEP"
+            mode = "PLAYING" if self.continuous_mode else "PAUSED"
             logger.info(f"Mode: {mode}")
+        elif key == 83:  # Right arrow: next frame (when paused)
+            if not self.continuous_mode:
+                # In step mode, right arrow advances to next frame
+                # Return False to continue loop (frame will advance naturally)
+                pass
         elif key == ord('s'):
             filename = f"frame_{int(time.time())}.jpg"
             cv2.imwrite(filename, frame)

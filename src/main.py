@@ -5,9 +5,9 @@ Usage:
     python -m src.main --video data/TownCent.mp4 --conf 0.7 --save-output
 
 Controls:
-    c      - Toggle continuous/step mode
-    SPACE  - Next frame (in step mode)
-    s      - Save current frame as image
+    SPACE  - Play/Pause
+    →      - Next frame (when paused)
+    s      - Save current frame
     q      - Quit
 """
 
@@ -23,7 +23,7 @@ def setup_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description='Video detection processor',
-        epilog='Controls: c=toggle mode | SPACE=next frame | s=save frame | q=quit'
+        epilog='Controls: SPACE=play/pause | →=next frame | s=save frame | q=quit'
     )
     # Configuration file
     parser.add_argument('--config', type=str, default=None,
@@ -111,17 +111,10 @@ def main():
     else:
         logger.info(f"Using video source: {source}")
 
-    # Setup detector using factory
-    logger.info(f"Loading {detector_type} detector...")
-    try:
-        detector = DetectorFactory.create(config, logger)
-    except Exception as e:
-        logger.error(f"Failed to load detector: {e}", exc_info=verbose)
-        return
-
-    # TODO: ReID integration pending VideoProcessor refactoring
-    # ReID feature extraction will be added when tracking system is implemented
-    # See ARCHIVE/ for tracking code that will use ReID embeddings
+    # Create detector from config
+    logger.info(f"Creating detector with config: {config}")
+    detector = DetectorFactory.create_from_config(config)
+    logger.info(f"Detector initialized: {detector.__class__.__name__}")
 
     # Setup and run video processor
     try:

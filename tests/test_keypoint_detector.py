@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 import torch
-from src.detecting.detectors.keypoint_detector import KeypointDetector
+from src.detecting.keypoint.torchvision import TorchVisionKeypointDetector
 from src.core.properties import Keypoints
 
 
@@ -12,7 +12,7 @@ class TestKeypointDetector:
 
     def test_init_resnet50(self):
         """Test KeypointDetector initializes with resnet50 model."""
-        detector = KeypointDetector(model='resnet50', device='cpu')
+        detector = TorchVisionKeypointDetector(model='resnet50', device='cpu')
 
         assert detector.model is not None
         assert detector.device == 'cpu'  # String comparison
@@ -21,7 +21,7 @@ class TestKeypointDetector:
 
     def test_init_with_custom_thresholds(self):
         """Test KeypointDetector with custom thresholds."""
-        detector = KeypointDetector(
+        detector = TorchVisionKeypointDetector(
             model='resnet50',
             device='cpu',
             conf_threshold=0.7,
@@ -34,11 +34,11 @@ class TestKeypointDetector:
     def test_init_invalid_model(self):
         """Test KeypointDetector raises error for invalid model."""
         with pytest.raises(ValueError, match="Unknown model"):
-            KeypointDetector(model='invalid_model')
+            TorchVisionKeypointDetector(model='invalid_model')
 
     def test_preprocess(self):
         """Test preprocessing converts BGR to RGB tensor."""
-        detector = KeypointDetector(model='resnet50')
+        detector = TorchVisionKeypointDetector(model='resnet50')
 
         # Create BGR image with blue channel
         image = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -62,7 +62,7 @@ class TestKeypointDetector:
 
     def test_postprocess_filters_confidence(self):
         """Test postprocessing filters by confidence threshold."""
-        detector = KeypointDetector(model='resnet50', conf_threshold=0.7)
+        detector = TorchVisionKeypointDetector(model='resnet50', conf_threshold=0.7)
 
         # Create mock output with 2 detections, 1 low confidence
         output = {
@@ -82,7 +82,7 @@ class TestKeypointDetector:
 
     def test_postprocess_creates_keypoints_object(self):
         """Test postprocessing creates Keypoints objects."""
-        detector = KeypointDetector(model='resnet50')
+        detector = TorchVisionKeypointDetector(model='resnet50')
 
         # Create mock output
         output = {
@@ -108,7 +108,7 @@ class TestKeypointDetector:
 
     def test_postprocess_empty_result(self):
         """Test postprocessing with no detections."""
-        detector = KeypointDetector(model='resnet50', conf_threshold=0.9)
+        detector = TorchVisionKeypointDetector(model='resnet50', conf_threshold=0.9)
 
         # Create mock output with low confidence
         output = {
@@ -127,7 +127,7 @@ class TestKeypointDetector:
 
     def test_postprocess_multiple_detections(self):
         """Test postprocessing with multiple people."""
-        detector = KeypointDetector(model='resnet50', conf_threshold=0.5)
+        detector = TorchVisionKeypointDetector(model='resnet50', conf_threshold=0.5)
 
         # Create mock output with 3 people
         output = {
@@ -153,7 +153,7 @@ class TestKeypointDetector:
 
     def test_postprocess_class_id_is_person(self):
         """Test that class_id is always 1 (person) for keypoint detector."""
-        detector = KeypointDetector(model='resnet50')
+        detector = TorchVisionKeypointDetector(model='resnet50')
 
         # Create mock output
         output = {
